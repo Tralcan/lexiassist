@@ -28,10 +28,6 @@ export async function legalConsultationRAG(input: LegalConsultationRAGInput): Pr
 
 const prompt = ai.definePrompt({
   name: 'legalConsultationRAGPrompt',
-  input: {schema: z.object({
-    question: z.string(),
-    context: z.string(),
-  })},
   prompt: `You are a legal assistant specialized in Chilean law. You MUST answer in Spanish. Answer the user's question using ONLY the provided context. If the context is not sufficient, say that you don't have enough information to answer.\n\nContext:\n{{context}}\n\nQuestion: {{{question}}}`,
 });
 
@@ -53,7 +49,7 @@ const legalConsultationRAGFlow = ai.defineFlow(
     
     // The response is an array with one object: [{ embedding: [...] }]
     // We need to extract the raw vector.
-    const queryEmbedding = embeddingResponse[0]?.embedding;
+    const queryEmbedding = embeddingResponse;
     console.log('[RAG Flow] Generated query embedding:', queryEmbedding ? `Vector of dimension ${queryEmbedding.length}` : 'null');
 
 
@@ -89,7 +85,7 @@ const legalConsultationRAGFlow = ai.defineFlow(
 
     // 3. Call the LLM with the context and question
     console.log('[RAG Flow] Calling LLM with context...');
-    const llmResponse = await prompt({...input, context});
+    const llmResponse = await prompt({question: input.question, context});
     
     console.log('[RAG Flow] Received answer from LLM.');
     return { answer: llmResponse.text };
