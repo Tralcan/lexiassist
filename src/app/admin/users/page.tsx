@@ -1,5 +1,4 @@
 
-import 'dotenv/config';
 import { createAdminClient } from '@/lib/supabase/admin';
 import UserTableClient from './components/user-table-client';
 
