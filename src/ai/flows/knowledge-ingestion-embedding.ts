@@ -54,7 +54,7 @@ const knowledgeIngestionEmbeddingFlow = ai.defineFlow(
       // 2. Generate embeddings for each chunk individually and in parallel.
       const embeddingPromises = chunks.map(chunk => 
         ai.embed({
-          embedder: 'googleai/embedding-004',
+          embedder: 'googleai/text-embedding-004',
           content: chunk,
         })
       );

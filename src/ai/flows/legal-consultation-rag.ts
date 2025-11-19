@@ -47,7 +47,7 @@ const legalConsultationRAGFlow = ai.defineFlow(
 
     // 1. Vectorize the user's question
     const { embedding } = await ai.embed({
-        embedder: 'googleai/embedding-004',
+        embedder: 'googleai/text-embedding-004',
         content: input.question,
     });
 
