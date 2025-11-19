@@ -45,24 +45,46 @@ const knowledgeIngestionEmbeddingFlow = ai.defineFlow(
     try {
       const supabase = createAdminClient();
       
-      const chunks = input.lawText.split('\n').filter(chunk => chunk.trim().length > 10);
+      const lines = input.lawText.split('\n').filter(line => line.trim().length > 0);
+      if (lines.length === 0) {
+        return { success: false, message: 'El texto de la ley está vacío o no tiene contenido.' };
+      }
+      
+      const chunks: string[] = [];
+      let currentHeader = '';
+
+      for (const line of lines) {
+        // Heurística simple: si una línea es corta y no empieza como un artículo, es un título.
+        // Se puede mejorar con expresiones regulares más complejas si es necesario.
+        if (line.length < 100 && !line.trim().toLowerCase().startsWith('artículo')) {
+            currentHeader = line.trim();
+            // También añadimos el propio título como un chunk, por si es relevante.
+            chunks.push(currentHeader);
+        } else {
+            // Si es un artículo, lo prefijamos con el último encabezado que encontramos.
+            const chunkContent = currentHeader ? `${currentHeader} - ${line.trim()}` : line.trim();
+            chunks.push(chunkContent);
+        }
+      }
+
       if (chunks.length === 0) {
-        return { success: false, message: 'No text chunks to process. Ensure the text has paragraphs.' };
+        return { success: false, message: 'No se generaron fragmentos procesables. Asegúrate de que el texto esté bien formateado.' };
       }
       
       let processedCount = 0;
       for (const chunk of chunks) {
+         if (chunk.trim().length < 20) continue; // Omitir chunks muy cortos
+
         const embeddingResponse = await ai.embed({
           embedder: 'googleai/text-embedding-004',
           content: chunk,
         });
         
-        // The response is an array with one object: [{ embedding: [...] }]
-        // We need to extract the raw vector.
         const vector = embeddingResponse[0]?.embedding;
 
         if (!vector) {
-            throw new Error(`Failed to generate embedding for chunk: "${chunk.substring(0, 20)}..."`);
+            console.warn(`No se pudo generar embedding para el fragmento: "${chunk.substring(0, 30)}..."`);
+            continue; // Saltar este chunk y continuar con el siguiente
         }
 
         const { error } = await supabase.from('lex_documents').insert({
@@ -71,22 +93,25 @@ const knowledgeIngestionEmbeddingFlow = ai.defineFlow(
         });
 
         if (error) {
-          // If one fails, we stop and report the error.
-          throw new Error(`Supabase error on chunk "${chunk.substring(0, 20)}...": ${error.message}`);
+          throw new Error(`Error en Supabase en el fragmento "${chunk.substring(0, 30)}...": ${error.message}`);
         }
         processedCount++;
       }
 
+      if (processedCount === 0) {
+          return { success: false, message: 'Aunque se procesó el texto, no se pudieron ingerir fragmentos válidos. Revisa el formato y contenido.' };
+      }
+
       return {
         success: true,
-        message: `Successfully ingested and embedded ${processedCount} document chunks.`,
+        message: `Se ingirieron y procesaron exitosamente ${processedCount} fragmentos de documentos.`,
       };
 
     } catch (error: any) {
-        console.error("Error in knowledge ingestion flow:", error);
+        console.error("Error en el flujo de ingesta de conocimiento:", error);
         return {
             success: false,
-            message: error.message || "An unknown error occurred during ingestion."
+            message: error.message || "Ocurrió un error desconocido durante la ingesta."
         }
     }
   }
