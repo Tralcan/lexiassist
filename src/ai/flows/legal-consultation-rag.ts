@@ -11,6 +11,7 @@
 import {ai} from '@/ai/genkit';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {z} from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const LegalConsultationRAGInputSchema = z.object({
   question: z.string().describe('The legal question to ask.'),
@@ -28,6 +29,7 @@ export async function legalConsultationRAG(input: LegalConsultationRAGInput): Pr
 
 const prompt = ai.definePrompt({
   name: 'legalConsultationRAGPrompt',
+  model: googleAI.model('gemini-1.5-flash'),
   prompt: `You are a legal assistant specialized in Chilean law. You MUST answer in Spanish. Answer the user's question using ONLY the provided context. If the context is not sufficient, say that you don't have enough information to answer.\n\nContext:\n{{context}}\n\nQuestion: {{{question}}}`,
 });
 
@@ -47,9 +49,7 @@ const legalConsultationRAGFlow = ai.defineFlow(
         content: input.question,
     });
     
-    // The response is an array with one object: [{ embedding: [...] }]
-    // We need to extract the raw vector.
-    const queryEmbedding = embeddingResponse[0]?.embedding;
+    const queryEmbedding = embeddingResponse;
     console.log('[RAG Flow] Generated query embedding:', queryEmbedding ? `Vector of dimension ${queryEmbedding.length}` : 'null');
 
 
@@ -61,7 +61,7 @@ const legalConsultationRAGFlow = ai.defineFlow(
     console.log('[RAG Flow] Searching for documents in Supabase...');
     const { data: documents, error } = await supabase.rpc('match_lex_documents', {
         query_embedding: queryEmbedding,
-        match_threshold: 0.3, // Lowered from 0.78
+        match_threshold: 0.3,
         match_count: 5,
     });
 
