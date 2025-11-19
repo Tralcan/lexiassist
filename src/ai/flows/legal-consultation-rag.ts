@@ -49,7 +49,7 @@ const legalConsultationRAGFlow = ai.defineFlow(
     
     // The response is an array with one object: [{ embedding: [...] }]
     // We need to extract the raw vector.
-    const queryEmbedding = embeddingResponse;
+    const queryEmbedding = embeddingResponse[0]?.embedding;
     console.log('[RAG Flow] Generated query embedding:', queryEmbedding ? `Vector of dimension ${queryEmbedding.length}` : 'null');
 
 
