@@ -29,7 +29,7 @@ export async function legalConsultationRAG(input: LegalConsultationRAGInput): Pr
 
 const prompt = ai.definePrompt({
   name: 'legalConsultationRAGPrompt',
-  model: googleAI.model('gemini-1.5-pro-latest'),
+  model: googleAI.model('gemini-1.5-flash'),
   prompt: `You are a legal assistant specialized in Chilean law. You MUST answer in Spanish. Answer the user's question using ONLY the provided context. If the context is not sufficient, say that you don't have enough information to answer.\n\nContext:\n{{context}}\n\nQuestion: {{{question}}}`,
 });
 
