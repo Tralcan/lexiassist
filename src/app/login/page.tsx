@@ -1,5 +1,7 @@
+
 'use client';
 import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -14,6 +16,16 @@ import { Logo } from '@/components/logo';
 import { handleLogin } from './actions';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+
+function LoginButton() {
+    const { pending } = useFormStatus();
+
+    return (
+        <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={pending}>
+            {pending ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+        </Button>
+    );
+}
 
 export default function LoginPage() {
     const [state, formAction] = useActionState(handleLogin, { error: null });
@@ -52,9 +64,7 @@ export default function LoginPage() {
                                 <AlertDescription>{state.error}</AlertDescription>
                             </Alert>
                         )}
-                        <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
-                            Iniciar Sesión
-                        </Button>
+                        <LoginButton />
                     </form>
                 </CardContent>
             </Card>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useActionState } from 'react';
@@ -7,11 +8,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { askQuestion } from '../actions';
 import { AlertCircle, Bot, User } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useFormStatus } from 'react-dom';
 
 const initialState = {
   answer: '',
   error: '',
 };
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button type="submit" className="w-full" disabled={pending}>
+      {pending ? 'Pensando...' : 'Enviar Consulta'}
+    </Button>
+  );
+}
 
 export default function ChatPage() {
   const [state, formAction] = useActionState(askQuestion, initialState);
@@ -37,7 +49,7 @@ export default function ChatPage() {
                         required
                     />
                 </div>
-                <Button type="submit" className="w-full">Enviar Consulta</Button>
+                <SubmitButton />
             </form>
 
             {state?.error && (
