@@ -45,17 +45,22 @@ const knowledgeIngestionEmbeddingFlow = ai.defineFlow(
     try {
       const supabase = createAdminClient();
       
-      // 1. Chunk the text (simple split by newline for paragraphs)
+      // 1. Chunk the text
       const chunks = input.lawText.split('\n').filter(chunk => chunk.trim().length > 10);
       if (chunks.length === 0) {
         return { success: false, message: 'No text chunks to process. Ensure the text has paragraphs.' };
       }
       
-      // 2. Generate embeddings for each chunk.
-      const { embeddings } = await ai.embed({
+      // 2. Generate embeddings for each chunk individually and in parallel.
+      const embeddingPromises = chunks.map(chunk => 
+        ai.embed({
           embedder: 'googleai/embedding-004',
-          content: chunks,
-      });
+          content: chunk,
+        })
+      );
+      
+      const embeddingResults = await Promise.all(embeddingPromises);
+      const embeddings = embeddingResults.map(result => result.embedding);
 
       if (!embeddings || embeddings.length !== chunks.length) {
         throw new Error('Mismatch between number of chunks and embeddings generated.');
