@@ -3,7 +3,7 @@ import { Logo } from './logo';
 import { UserNav } from './user-nav';
 import Link from 'next/link';
 import { Button } from './ui/button';
-import { Profile } from '@/types';
+import type { Profile } from '@/types';
 
 export default async function Header() {
   const supabase = createClient();

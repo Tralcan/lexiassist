@@ -65,6 +65,11 @@ export function UserNav({ user, profile }: UserNavProps) {
               </DropdownMenuItem>
             </Link>
           )}
+           <Link href="/chat">
+              <DropdownMenuItem>
+                Chat
+              </DropdownMenuItem>
+            </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
