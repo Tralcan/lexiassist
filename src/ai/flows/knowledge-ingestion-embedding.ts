@@ -58,7 +58,7 @@ const knowledgeIngestionEmbeddingFlow = ai.defineFlow(
       });
 
       if (!embeddings || embeddings.length !== chunks.length) {
-        return { success: false, message: 'Mismatch between number of chunks and embeddings.' };
+        throw new Error('Mismatch between number of chunks and embeddings generated.');
       }
 
       // 3. Prepare data for Supabase
