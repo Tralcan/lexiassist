@@ -45,13 +45,11 @@ const knowledgeIngestionEmbeddingFlow = ai.defineFlow(
     try {
       const supabase = createAdminClient();
       
-      // 1. Chunk the text
       const chunks = input.lawText.split('\n').filter(chunk => chunk.trim().length > 10);
       if (chunks.length === 0) {
         return { success: false, message: 'No text chunks to process. Ensure the text has paragraphs.' };
       }
       
-      // 2. Generate embeddings for each chunk individually and in parallel.
       const embeddingPromises = chunks.map(chunk => 
         ai.embed({
           embedder: 'googleai/text-embedding-004',
@@ -65,13 +63,12 @@ const knowledgeIngestionEmbeddingFlow = ai.defineFlow(
         throw new Error('Mismatch between number of chunks and embeddings generated.');
       }
 
-      // 3. Prepare data for Supabase, correctly extracting the vector array.
+      // The result from ai.embed is the vector itself (number[]).
       const documents = chunks.map((chunk, i) => ({
         content: chunk,
         embedding: embeddings[i],
       }));
       
-      // 4. Store in Supabase
       const { error } = await supabase.from('lex_documents').insert(documents);
 
       if (error) {
