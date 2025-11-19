@@ -46,10 +46,18 @@ const legalConsultationRAGFlow = ai.defineFlow(
     const supabase = createAdminClient();
 
     // 1. Vectorize the user's question
-    const queryEmbedding = await ai.embed({
+    const embeddingResponse = await ai.embed({
         embedder: 'googleai/text-embedding-004',
         content: input.question,
     });
+
+    // The response is an array with one object: [{ embedding: [...] }]
+    // We need to extract the raw vector.
+    const queryEmbedding = embeddingResponse[0]?.embedding;
+
+    if (!queryEmbedding) {
+        throw new Error("Failed to generate embedding for the question.");
+    }
 
 
     // 2. Search Supabase for relevant legal fragments
