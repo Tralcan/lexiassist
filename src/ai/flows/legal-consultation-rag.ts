@@ -43,21 +43,25 @@ const legalConsultationRAGFlow = ai.defineFlow(
     outputSchema: LegalConsultationRAGOutputSchema,
   },
   async input => {
+    console.log(`[RAG Flow] Starting for question: "${input.question}"`);
     const supabase = createAdminClient();
 
     // 1. Vectorize the user's question
-    const embeddingResponse = await ai.embed({
+    const embedding = await ai.embed({
         embedder: 'googleai/text-embedding-004',
         content: input.question,
     });
     
-    const queryEmbedding = embeddingResponse;
+    const queryEmbedding = embedding;
+    console.log('[RAG Flow] Generated query embedding:', queryEmbedding ? `Vector of dimension ${queryEmbedding.length}` : 'null');
+
 
     if (!queryEmbedding) {
         throw new Error("Failed to generate embedding for the question.");
     }
 
     // 2. Search Supabase for relevant legal fragments
+    console.log('[RAG Flow] Searching for documents in Supabase...');
     const { data: documents, error } = await supabase.rpc('match_lex_documents', {
         query_embedding: queryEmbedding,
         match_threshold: 0.78,
@@ -65,17 +69,28 @@ const legalConsultationRAGFlow = ai.defineFlow(
     });
 
     if (error) {
+        console.error('[RAG Flow] Supabase RPC error:', error);
         throw new Error(`Error fetching documents from Supabase: ${error.message}`);
     }
+    
+    console.log(`[RAG Flow] Found ${documents?.length || 0} documents.`);
 
-    const context = documents.map((doc: any) => doc.content).join('\n\n');
+
+    const context = documents?.map((doc: any) => doc.content).join('\n\n') || '';
     
     if(!context){
+        console.log('[RAG Flow] No context found. Returning default answer.');
         return { answer: "No tengo suficiente información en mi base de conocimiento para responder a tu pregunta." };
     }
 
+    console.log('[RAG Flow] Context created from documents:', context.substring(0, 200) + '...');
+
+
     // 3. Call the LLM with the context and question
+    console.log('[RAG Flow] Calling LLM with context...');
     const {output} = await prompt({...input, context});
+    
+    console.log('[RAG Flow] Received answer from LLM.');
     return output!;
   }
 );
