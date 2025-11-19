@@ -1,107 +1,82 @@
--- setup.sql
+-- Drop existing tables and functions if they exist to avoid conflicts
+-- This is useful for development to start with a clean slate.
+DROP TABLE IF EXISTS public.lex_documents CASCADE;
+DROP TABLE IF EXISTS public.lex_profiles CASCADE;
+DROP FUNCTION IF EXISTS public.lex_handle_new_user();
 
--- 1. Habilitar la extensión pgvector
--- Esta extensión es necesaria para trabajar con embeddings y búsqueda de similitud.
-create extension if not exists vector with schema extensions;
-
--- 2. Crear la tabla de perfiles de usuario (lex_profiles)
--- Esta tabla almacenará información adicional para los usuarios autenticados.
-create table public.lex_profiles (
-  id uuid references auth.users not null primary key,
-  updated_at timestamp with time zone,
+-- Create profiles table
+CREATE TABLE public.lex_profiles (
+  id uuid NOT NULL PRIMARY KEY,
   full_name text,
   email text,
-  role text default 'user',
-  access_expires_at timestamp with time zone
+  role text,
+  access_expires_at timestamp with time zone,
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users (id) ON DELETE CASCADE
 );
+COMMENT ON TABLE public.lex_profiles IS 'Stores user profile information.';
 
--- 3. Crear la tabla de documentos para el conocimiento (lex_documents)
--- Esta tabla almacenará los fragmentos de texto y sus embeddings correspondientes.
-create table public.lex_documents (
-  id bigserial primary key,
+-- Create documents table
+CREATE TABLE public.lex_documents (
+  id bigserial PRIMARY KEY,
   content text,
-  metadata jsonb,
-  embedding vector(768) -- El modelo de embedding de Gemini suele usar 768 dimensiones.
+  embedding vector(768)
 );
+COMMENT ON TABLE public.lex_documents IS 'Stores ingested legal documents and their embeddings.';
 
--- 4. Crear una función para búsqueda de similitud
--- Esta función buscará en lex_documents y devolverá los fragmentos más relevantes.
-create or replace function match_documents (
-  query_embedding vector(768),
-  match_threshold float,
-  match_count int
-)
-returns table (
-  id bigint,
-  content text,
-  metadata jsonb,
-  similarity float
-)
-language sql stable
-as $$
-  select
-    lex_documents.id,
-    lex_documents.content,
-    lex_documents.metadata,
-    1 - (lex_documents.embedding <=> query_embedding) as similarity
-  from lex_documents
-  where 1 - (lex_documents.embedding <=> query_embedding) > match_threshold
-  order by similarity desc
-  limit match_count;
+
+-- Create a function to handle new user creation
+CREATE OR REPLACE FUNCTION public.lex_handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.lex_profiles (id, email)
+  VALUES (new.id, new.email);
+  RETURN new;
+END;
 $$;
+COMMENT ON FUNCTION public.lex_handle_new_user IS 'Creates a profile for a new user.';
 
--- 5. Configurar Políticas de Seguridad a Nivel de Fila (RLS)
+-- Create a trigger to call the function after a new user is created
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.lex_handle_new_user();
+COMMENT ON TRIGGER on_auth_user_created ON auth.users IS 'When a user is created, this trigger fires the lex_handle_new_user function to create a corresponding profile.';
 
--- Habilitar RLS en la tabla de perfiles
-alter table public.lex_profiles enable row level security;
+-- Enable Row Level Security (RLS)
+ALTER TABLE public.lex_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lex_documents ENABLE ROW LEVEL SECURITY;
 
--- Los usuarios pueden ver su propio perfil.
-create policy "Users can view their own profile."
-on public.lex_profiles for select
-using ( auth.uid() = id );
+-- Policies for profiles table
+CREATE POLICY "Users can view their own profile." ON public.lex_profiles
+  FOR SELECT USING (auth.uid() = id);
 
--- Los usuarios pueden actualizar su propio perfil.
-create policy "Users can update their own profile."
-on public.lex_profiles for update
-using ( auth.uid() = id );
+CREATE POLICY "Users can update their own profile." ON public.lex_profiles
+  FOR UPDATE USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
 
--- Los administradores tienen acceso completo a los perfiles.
-create policy "Admins have full access to profiles."
-on public.lex_profiles for all
-using ( (select auth.uid() from public.lex_profiles where id = auth.uid() and role = 'admin') is not null );
+CREATE POLICY "Admins have full access to profiles." ON public.lex_profiles
+  FOR ALL USING ((SELECT role FROM public.lex_profiles WHERE id = auth.uid()) = 'admin');
 
 
--- Habilitar RLS en la tabla de documentos
-alter table public.lex_documents enable row level security;
+-- Policies for documents table
+CREATE POLICY "Admins can manage documents." ON public.lex_documents
+  FOR ALL USING ((SELECT role FROM public.lex_profiles WHERE id = auth.uid()) = 'admin');
 
--- Cualquier usuario autenticado puede leer los documentos.
-create policy "Authenticated users can read documents."
-on public.lex_documents for select
-using ( auth.role() = 'authenticated' );
+CREATE POLICY "Authenticated users can read documents." ON public.lex_documents
+  FOR SELECT USING (auth.role() = 'authenticated');
 
--- Solo los administradores pueden crear, actualizar o eliminar documentos.
-create policy "Admins can manage documents."
-on public.lex_documents for all
-using ( (select auth.uid() from public.lex_profiles where id = auth.uid() and role = 'admin') is not null );
 
--- 6. Función para crear perfiles de usuario automáticamente
--- Esta función se dispara cuando se crea un nuevo usuario en auth.users.
-create function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer set search_path = public
-as $$
-begin
-  insert into public.lex_profiles (id, email, role)
-  values (new.id, new.email, 'user');
-  return new;
-end;
-$$;
+-- Grant usage on the schema to the necessary roles
+GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
 
--- 7. Trigger para la función de creación de perfiles
--- Asocia la función handle_new_user al evento de inserción en auth.users.
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
+-- Grant permissions for the tables
+GRANT ALL ON TABLE public.lex_profiles TO postgres, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.lex_profiles TO authenticated;
 
--- Fin del script --
+GRANT ALL ON TABLE public.lex_documents TO postgres, service_role;
+GRANT SELECT ON TABLE public.lex_documents TO authenticated;
+
+-- Grant permissions for sequences (if you have bigserial columns)
+GRANT USAGE, SELECT ON SEQUENCE public.lex_documents_id_seq TO postgres, service_role, authenticated;
