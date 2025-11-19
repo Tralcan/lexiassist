@@ -1,3 +1,5 @@
+'use client';
+
 import { NavLink } from './nav-link';
 import { Users, BookText, PanelLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
