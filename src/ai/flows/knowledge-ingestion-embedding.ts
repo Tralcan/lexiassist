@@ -59,8 +59,7 @@ const knowledgeIngestionEmbeddingFlow = ai.defineFlow(
         })
       );
       
-      const embeddingResults = await Promise.all(embeddingPromises);
-      const embeddings = embeddingResults.map(result => result.embedding);
+      const embeddings = await Promise.all(embeddingPromises);
 
       if (!embeddings || embeddings.length !== chunks.length) {
         throw new Error('Mismatch between number of chunks and embeddings generated.');
