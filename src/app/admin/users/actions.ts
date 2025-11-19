@@ -39,7 +39,7 @@ export async function createUser(data: z.infer<typeof userSchema>) {
     return { success: false, message: "Could not create user." };
   }
 
-  const { error: profileError } = await supabaseAdmin.from('profiles').insert({
+  const { error: profileError } = await supabaseAdmin.from('lex_profiles').insert({
     id: user.id,
     full_name: data.fullName,
     email: data.email,
@@ -61,7 +61,7 @@ export async function updateUser(userId: string, data: Partial<z.infer<typeof us
   const supabaseAdmin = createAdminClient();
 
   const { error: profileError } = await supabaseAdmin
-    .from('profiles')
+    .from('lex_profiles')
     .update({
       full_name: data.fullName,
       access_expires_at: data.accessExpiresAt?.toISOString(),
@@ -76,7 +76,7 @@ export async function updateUser(userId: string, data: Partial<z.infer<typeof us
   const {data: updatedUser, error: userError} = await supabaseAdmin.auth.admin.getUserById(userId);
   if(userError) return { success: false, message: userError.message };
 
-  const {data: profile} = await supabaseAdmin.from('profiles').select('*').eq('id', userId).single();
+  const {data: profile} = await supabaseAdmin.from('lex_profiles').select('*').eq('id', userId).single();
 
 
   revalidatePath('/admin/users');

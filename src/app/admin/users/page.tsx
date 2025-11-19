@@ -13,7 +13,7 @@ async function getUsers() {
 
     const userIds = usersData.users.map(u => u.id);
     const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
+        .from('lex_profiles')
         .select('*')
         .in('id', userIds);
     

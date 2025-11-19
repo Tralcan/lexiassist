@@ -77,7 +77,7 @@ export async function middleware(request: NextRequest) {
   
   if (session && pathname.startsWith('/admin')) {
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('lex_profiles')
       .select('role')
       .eq('id', session.user.id)
       .single();

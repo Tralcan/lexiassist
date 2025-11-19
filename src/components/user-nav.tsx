@@ -29,7 +29,7 @@ export function UserNav({ user }: UserNavProps) {
   useEffect(() => {
     const checkAdminRole = async () => {
       const { data } = await supabase
-        .from('profiles')
+        .from('lex_profiles')
         .select('role')
         .eq('id', user.id)
         .single();
