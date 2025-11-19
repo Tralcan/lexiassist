@@ -51,13 +51,18 @@ const knowledgeIngestionEmbeddingFlow = ai.defineFlow(
         return { success: false, message: 'No text chunks to process. Ensure the text has paragraphs.' };
       }
       
-      // 2. Generate embeddings for each chunk
-      const {embeddings} = await ai.embed({
-          embedder: 'googleai/embedding-004',
-          content: chunks,
+      // 2. Generate embeddings for each chunk using ai.generate for more control
+      const embeddingResponse = await ai.generate({
+        model: 'googleai/embedding-004',
+        prompt: chunks,
+        config: {
+            task: 'RETRIEVAL_DOCUMENT' // Specify the task for better embeddings
+        }
       });
 
-      if (embeddings.length !== chunks.length) {
+      const embeddings = embeddingResponse.embeddings;
+
+      if (!embeddings || embeddings.length !== chunks.length) {
         return { success: false, message: 'Mismatch between number of chunks and embeddings.' };
       }
 
