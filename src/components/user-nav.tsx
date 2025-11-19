@@ -24,21 +24,30 @@ type UserNavProps = {
 export function UserNav({ user }: UserNavProps) {
   const router = useRouter();
   const supabase = createClient();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     const checkAdminRole = async () => {
       const { data } = await supabase
         .from('lex_profiles')
         .select('role')
         .eq('id', user.id)
         .single();
-      if (data?.role === 'admin') {
-        setIsAdmin(true);
+      
+      if (isMounted) {
+        setIsAdmin(data?.role === 'admin');
       }
     };
-    checkAdminRole();
-  }, [supabase, user.id]);
+
+    if (user) {
+      checkAdminRole();
+    }
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase, user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -71,7 +80,7 @@ export function UserNav({ user }: UserNavProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          {isAdmin && (
+          {isAdmin === true && (
              <Link href="/admin">
               <DropdownMenuItem>
                 Admin Dashboard

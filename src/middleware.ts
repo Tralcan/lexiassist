@@ -1,12 +1,13 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import type { CookieOptions } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
-  })
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,51 +15,47 @@ export async function middleware(request: NextRequest) {
     {
       cookies: {
         get(name: string) {
-          return request.cookies.get(name)?.value
+          return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options })
+          request.cookies.set({ name, value, ...options });
           response = NextResponse.next({
             request: {
               headers: request.headers,
             },
-          })
-          response.cookies.set({ name, value, ...options })
+          });
+          response.cookies.set({ name, value, ...options });
         },
         remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: '', ...options })
+          request.cookies.set({ name, value: '', ...options });
           response = NextResponse.next({
             request: {
               headers: request.headers,
             },
-          })
-          response.cookies.set({ name, value: '', ...options })
+          });
+          response.cookies.set({ name, value: '', ...options });
         },
       },
     }
-  )
+  );
 
-  // refresh session
+  // IMPORTANT: This refreshes the session and must be called before any other Supabase method
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 
-  const { pathname } = request.nextUrl
+  const { pathname } = request.nextUrl;
 
-  // Define public and authentication paths
-  const publicPaths = ['/'];
-  const authPaths = ['/login'];
-
-  const isPublicPath = publicPaths.includes(pathname);
-  const isAuthPath = authPaths.includes(pathname);
-
-  // If user is not signed in and trying to access a protected route
-  if (!user && !isPublicPath && !isAuthPath) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  const publicPaths = ['/login', '/'];
+  const isPublicPath = publicPaths.some(p => pathname.startsWith(p) && p !== '/') || pathname === '/';
+  
+  // If user is trying to access a protected route without a session, redirect to login
+  if (!user && !isPublicPath) {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // If user is signed in and trying to access an auth page, redirect to chat
-  if (user && isAuthPath) {
-    return NextResponse.redirect(new URL('/chat', request.url))
+  // If user is logged in and tries to access login page, redirect to chat
+  if (user && pathname.startsWith('/login')) {
+    return NextResponse.redirect(new URL('/chat', request.url));
   }
 
   // Protect admin routes
@@ -66,20 +63,22 @@ export async function middleware(request: NextRequest) {
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
-
-    const { data: profile } = await supabase
+    
+    // Fetch user role from the database
+    const { data: profile, error } = await supabase
       .from('lex_profiles')
       .select('role')
       .eq('id', user.id)
-      .single()
+      .single();
 
-    // If user is not an admin, redirect to chat
-    if (profile?.role !== 'admin') {
-      return NextResponse.redirect(new URL('/chat', request.url))
+    if (error || profile?.role !== 'admin') {
+      // If there's an error or the user is not an admin, redirect them
+      return NextResponse.redirect(new URL('/chat', request.url));
     }
   }
 
-  return response
+  // If all checks pass, continue to the requested route
+  return response;
 }
 
 export const config = {
@@ -93,4 +92,4 @@ export const config = {
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
-}
+};
