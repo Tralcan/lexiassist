@@ -50,28 +50,28 @@ const knowledgeIngestionEmbeddingFlow = ai.defineFlow(
         return { success: false, message: 'No text chunks to process. Ensure the text has paragraphs.' };
       }
       
-      const documents = await Promise.all(
-        chunks.map(async (chunk) => {
-          const embedding = await ai.embed({
-            embedder: 'googleai/text-embedding-004',
-            content: chunk,
-          });
-          return {
-            content: chunk,
-            embedding: embedding, // ai.embed for a single content returns number[] directly
-          };
-        })
-      );
-      
-      const { error } = await supabase.from('lex_documents').insert(documents);
+      let processedCount = 0;
+      for (const chunk of chunks) {
+        const embedding = await ai.embed({
+          embedder: 'googleai/text-embedding-004',
+          content: chunk,
+        });
 
-      if (error) {
-        throw new Error(`Supabase error: ${error.message}`);
+        const { error } = await supabase.from('lex_documents').insert({
+          content: chunk,
+          embedding: embedding,
+        });
+
+        if (error) {
+          // If one fails, we stop and report the error.
+          throw new Error(`Supabase error on chunk "${chunk.substring(0, 20)}...": ${error.message}`);
+        }
+        processedCount++;
       }
 
       return {
         success: true,
-        message: `Successfully ingested and embedded ${documents.length} document chunks.`,
+        message: `Successfully ingested and embedded ${processedCount} document chunks.`,
       };
 
     } catch (error: any) {
