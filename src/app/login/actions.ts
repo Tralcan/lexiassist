@@ -9,7 +9,7 @@ export async function handleLogin(prevState: any, formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
-  const { data: { session }, error } = await supabase.auth.signInWithPassword({
+  const { data: { user }, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -18,17 +18,17 @@ export async function handleLogin(prevState: any, formData: FormData) {
     return { error: error.message };
   }
 
-  if (session) {
+  if (user) {
     const { data: profile } = await supabase
       .from('lex_profiles')
       .select('role')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single();
 
     if (profile?.role === 'admin') {
-      return redirect('/admin');
+      redirect('/admin');
     }
   }
 
-  return redirect('/chat');
+  redirect('/chat');
 }
