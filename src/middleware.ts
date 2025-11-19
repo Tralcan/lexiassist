@@ -61,21 +61,18 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isAuthPage = pathname === '/login';
+  const isHomePage = pathname === '/';
 
-  if (!session && !isAuthPage) {
+  if (!session && !isAuthPage && !isHomePage) {
     let from = pathname;
     if (request.nextUrl.search) {
       from += request.nextUrl.search;
     }
     return NextResponse.redirect(new URL(`/login?from=${encodeURIComponent(from)}`, request.url));
   }
-
-  if (session && isAuthPage) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
   
-  if (pathname === '/') {
-    return NextResponse.redirect(new URL('/chat', request.url))
+  if (session && isAuthPage) {
+    return NextResponse.redirect(new URL('/chat', request.url));
   }
   
   if (session && pathname.startsWith('/admin')) {

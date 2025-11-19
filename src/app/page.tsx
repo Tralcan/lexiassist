@@ -1,123 +1,79 @@
 'use client';
-
-import { useState, useRef, useEffect, useActionState } from 'react';
-import { Paperclip, SendHorizonal, Bot } from 'lucide-react';
-
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { askQuestion } from './actions';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import Header from '@/components/header';
+import { ArrowRight, BookLock, MessageSquare } from 'lucide-react';
+import { Logo } from '@/components/logo';
+import Link from 'next/link';
 
-type Message = {
-  role: 'user' | 'assistant';
-  content: string;
-};
-
-const initialState = {
-  answer: '',
-  error: '',
-};
-
-export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [formState, formAction] = useActionState(askQuestion, initialState);
-  const formRef = useRef<HTMLFormElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (formState.answer) {
-      setMessages((prev) => [...prev, { role: 'assistant', content: formState.answer }]);
-    }
-    if (formState.error) {
-      setMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${formState.error}` }]);
-    }
-  }, [formState]);
-
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({
-        top: scrollAreaRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
-    }
-  }, [messages]);
-
-  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    const formData = new FormData(e.currentTarget);
-    const question = formData.get('question') as string;
-    if (question.trim()) {
-      setMessages((prev) => [...prev, { role: 'user', content: question }]);
-    }
-    formAction(formData);
-    formRef.current?.reset();
-  };
-
+export default function LandingPage() {
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <Header />
-      <main className="flex-1 flex justify-center items-center p-4 md:p-6">
-        <Card className="w-full max-w-4xl h-[calc(100vh-100px)] flex flex-col shadow-lg">
-          <CardHeader>
-            <CardTitle className="font-headline">Legal Consultation</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
-            <ScrollArea className="flex-1 pr-4" ref={scrollAreaRef}>
-              <div className="space-y-6">
-                {messages.map((message, index) => (
-                  <div key={index} className={`flex items-start gap-4 ${message.role === 'user' ? 'justify-end' : ''}`}>
-                    {message.role === 'assistant' && (
-                      <Avatar className="w-8 h-8 border">
-                        <AvatarFallback className="bg-primary text-primary-foreground"><Bot size={20} /></AvatarFallback>
-                      </Avatar>
-                    )}
-                    <div
-                      className={`max-w-[75%] rounded-lg p-3 text-sm ${
-                        message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                      }`}
-                    >
-                      <p>{message.content}</p>
-                    </div>
-                     {message.role === 'user' && (
-                      <Avatar className="w-8 h-8 border">
-                        <AvatarFallback>U</AvatarFallback>
-                      </Avatar>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-            <div className="mt-auto pt-4 border-t">
-              <form ref={formRef} onSubmit={handleFormSubmit} className="relative">
-                <Textarea
-                  name="question"
-                  placeholder="Type your legal question here..."
-                  className="w-full resize-none pr-28"
-                  rows={2}
-                  onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        formRef.current?.requestSubmit();
-                      }
-                    }}
-                />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                  <Button type="button" size="icon" variant="ghost">
-                    <Paperclip className="w-5 h-5" />
-                    <span className="sr-only">Attach file</span>
-                  </Button>
-                  <Button type="submit" size="icon">
-                    <SendHorizonal className="w-5 h-5" />
-                    <span className="sr-only">Send</span>
-                  </Button>
+    <div className="flex flex-col min-h-screen bg-background">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center justify-between">
+          <Logo />
+          <Button asChild>
+            <Link href="/login">Login</Link>
+          </Button>
+        </div>
+      </header>
+      <main className="flex-1">
+        <section className="w-full py-20 md:py-32 lg:py-40">
+          <div className="container px-4 md:px-6">
+            <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 xl:gap-16 items-center">
+              <div className="space-y-4">
+                <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">
+                  Asistencia Legal Potenciada por IA
                 </div>
-              </form>
+                <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl font-headline">
+                  LexiAssist
+                </h1>
+                <p className="max-w-[600px] text-muted-foreground md:text-xl">
+                  Tu asistente legal virtual que utiliza modelos RAG para ofrecerte respuestas precisas y contextualizadas basadas en la legislación chilena.
+                </p>
+              </div>
+              <div className="grid gap-4 md:gap-8">
+                  <Link href="/chat">
+                    <div className="flex flex-col items-start gap-4 rounded-lg border p-6 text-left text-sm transition-all hover:bg-accent">
+                      <div className="flex items-center gap-4">
+                        <div className="bg-primary text-primary-foreground rounded-lg p-3 flex items-center justify-center">
+                          <MessageSquare className="h-6 w-6" />
+                        </div>
+                        <h3 className="text-xl font-bold">Acceso Cliente</h3>
+                      </div>
+                      <p className="text-muted-foreground">
+                        Realiza tus consultas legales y obtén asistencia inmediata a través de nuestro chat interactivo.
+                      </p>
+                      <div className="flex items-center gap-2 text-primary font-semibold">
+                        <span>Ir al Chat</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </div>
+                    </div>
+                  </Link>
+
+                  <Link href="/admin">
+                    <div className="flex flex-col items-start gap-4 rounded-lg border p-6 text-left text-sm transition-all hover:bg-accent">
+                      <div className="flex items-center gap-4">
+                        <div className="bg-secondary text-secondary-foreground rounded-lg p-3 flex items-center justify-center">
+                          <BookLock className="h-6 w-6" />
+                        </div>
+                        <h3 className="text-xl font-bold">Acceso Administrador</h3>
+                      </div>
+                      <p className="text-muted-foreground">
+                        Gestiona usuarios y la base de conocimiento que alimenta nuestro sistema de inteligencia artificial.
+                      </p>
+                      <div className="flex items-center gap-2 text-primary font-semibold">
+                        <span>Ir al Panel</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </div>
+                    </div>
+                  </Link>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       </main>
+      <footer className="flex items-center justify-center h-16 border-t">
+          <p className="text-sm text-muted-foreground">&copy; 2024 LexiAssist. Todos los derechos reservados.</p>
+      </footer>
     </div>
   );
 }
