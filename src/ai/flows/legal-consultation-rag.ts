@@ -11,6 +11,7 @@
 import {ai} from '@/ai/genkit';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {z} from 'genkit';
+import { embed } from '@genkit-ai/google-genai';
 
 const LegalConsultationRAGInputSchema = z.object({
   question: z.string().describe('The legal question to ask.'),
@@ -46,12 +47,10 @@ const legalConsultationRAGFlow = ai.defineFlow(
     const supabase = createAdminClient();
 
     // 1. Vectorize the user's question
-    const embeddingResult = await ai.embed({
+    const queryEmbedding = await embed({
         embedder: 'googleai/text-embedding-004',
         content: input.question,
     });
-    
-    const queryEmbedding = embeddingResult.embedding;
 
 
     // 2. Search Supabase for relevant legal fragments

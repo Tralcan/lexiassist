@@ -13,6 +13,7 @@
 import {ai} from '@/ai/genkit';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {z} from 'genkit';
+import { embed } from '@genkit-ai/google-genai';
 
 const KnowledgeIngestionEmbeddingInputSchema = z.object({
   lawText: z.string().describe('The text of the Chilean law to be ingested.'),
@@ -53,7 +54,7 @@ const knowledgeIngestionEmbeddingFlow = ai.defineFlow(
       
       // 2. Generate embeddings for each chunk individually and in parallel.
       const embeddingPromises = chunks.map(chunk => 
-        ai.embed({
+        embed({
           embedder: 'googleai/text-embedding-004',
           content: chunk,
         })
@@ -68,7 +69,7 @@ const knowledgeIngestionEmbeddingFlow = ai.defineFlow(
       // 3. Prepare data for Supabase, correctly extracting the vector.
       const documents = chunks.map((chunk, i) => ({
         content: chunk,
-        embedding: embeddings[i].embedding,
+        embedding: embeddings[i], // The embed function directly returns the vector array
       }));
       
       // 4. Store in Supabase
