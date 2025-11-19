@@ -1,82 +1,61 @@
--- Drop existing tables and functions if they exist to avoid conflicts
--- This is useful for development to start with a clean slate.
-DROP TABLE IF EXISTS public.lex_documents CASCADE;
-DROP TABLE IF EXISTS public.lex_profiles CASCADE;
-DROP FUNCTION IF EXISTS public.lex_handle_new_user();
+-- Enable the pgvector extension to work with vector types
+CREATE EXTENSION IF NOT EXISTS vector;
 
--- Create profiles table
-CREATE TABLE public.lex_profiles (
-  id uuid NOT NULL PRIMARY KEY,
+-- Create a table for public profiles
+create table lex_profiles (
+  id uuid references auth.users on delete cascade not null primary key,
   full_name text,
   email text,
-  role text,
-  access_expires_at timestamp with time zone,
-  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users (id) ON DELETE CASCADE
+  role text default 'user',
+  access_expires_at timestamp with time zone
 );
-COMMENT ON TABLE public.lex_profiles IS 'Stores user profile information.';
 
--- Create documents table
-CREATE TABLE public.lex_documents (
-  id bigserial PRIMARY KEY,
-  content text,
-  embedding vector(768)
+-- Set up Row Level Security (RLS)
+-- See https://supabase.com/docs/guides/auth/row-level-security
+alter table lex_profiles
+  enable row level security;
+
+create policy "Public profiles are viewable by everyone." on lex_profiles
+  for select using (true);
+
+create policy "Users can insert their own profile." on lex_profiles
+  for insert with check (auth.uid() = id);
+
+create policy "Users can update own profile." on lex_profiles
+  for update using (auth.uid() = id);
+
+-- This trigger automatically creates a profile entry when a new user signs up
+create or replace function public.lex_handle_new_user()
+returns trigger as $$
+begin
+  insert into public.lex_profiles (id, full_name, email)
+  values (new.id, new.raw_user_meta_data->>'full_name', new.email);
+  return new;
+end;
+$$ language plpgsql security definer;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.lex_handle_new_user();
+  
+-- Create a table to store document chunks and their embeddings
+create table lex_documents (
+    id bigserial primary key,
+    content text not null,
+    embedding vector(768)
 );
-COMMENT ON TABLE public.lex_documents IS 'Stores ingested legal documents and their embeddings.';
 
+-- Set up Row Level Security for documents table
+alter table lex_documents
+    enable row level security;
 
--- Create a function to handle new user creation
-CREATE OR REPLACE FUNCTION public.lex_handle_new_user()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER SET search_path = public
-AS $$
-BEGIN
-  INSERT INTO public.lex_profiles (id, email)
-  VALUES (new.id, new.email);
-  RETURN new;
-END;
-$$;
-COMMENT ON FUNCTION public.lex_handle_new_user IS 'Creates a profile for a new user.';
+-- For now, allow admins to do everything.
+-- You might want to refine this later.
+create policy "Admins can manage documents" on lex_documents
+    for all using (
+        (select role from lex_profiles where id = auth.uid()) = 'admin'
+    );
 
--- Create a trigger to call the function after a new user is created
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE PROCEDURE public.lex_handle_new_user();
-COMMENT ON TRIGGER on_auth_user_created ON auth.users IS 'When a user is created, this trigger fires the lex_handle_new_user function to create a corresponding profile.';
-
--- Enable Row Level Security (RLS)
-ALTER TABLE public.lex_profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.lex_documents ENABLE ROW LEVEL SECURITY;
-
--- Policies for profiles table
-CREATE POLICY "Users can view their own profile." ON public.lex_profiles
-  FOR SELECT USING (auth.uid() = id);
-
-CREATE POLICY "Users can update their own profile." ON public.lex_profiles
-  FOR UPDATE USING (auth.uid() = id)
-  WITH CHECK (auth.uid() = id);
-
-CREATE POLICY "Admins have full access to profiles." ON public.lex_profiles
-  FOR ALL USING ((SELECT role FROM public.lex_profiles WHERE id = auth.uid()) = 'admin');
-
-
--- Policies for documents table
-CREATE POLICY "Admins can manage documents." ON public.lex_documents
-  FOR ALL USING ((SELECT role FROM public.lex_profiles WHERE id = auth.uid()) = 'admin');
-
-CREATE POLICY "Authenticated users can read documents." ON public.lex_documents
-  FOR SELECT USING (auth.role() = 'authenticated');
-
-
--- Grant usage on the schema to the necessary roles
-GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
-
--- Grant permissions for the tables
-GRANT ALL ON TABLE public.lex_profiles TO postgres, service_role;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.lex_profiles TO authenticated;
-
-GRANT ALL ON TABLE public.lex_documents TO postgres, service_role;
-GRANT SELECT ON TABLE public.lex_documents TO authenticated;
-
--- Grant permissions for sequences (if you have bigserial columns)
-GRANT USAGE, SELECT ON SEQUENCE public.lex_documents_id_seq TO postgres, service_role, authenticated;
+-- Allow authenticated users to read documents.
+-- This is necessary for the RAG functionality.
+create policy "Authenticated users can view documents" on lex_documents
+    for select using ( auth.role() = 'authenticated' );
