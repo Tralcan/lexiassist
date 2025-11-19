@@ -42,19 +42,15 @@ export function IngestionForm() {
     }
   }, [state, toast, form]);
 
-  const { formState } = form;
-
-  // We need to pass the form data to the action manually when using react-hook-form
-  // with useActionState. The action prop on the form element won't work as expected.
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
-    const formData = new FormData();
-    formData.append('lawText', data.lawText);
-    formAction(formData);
-  };
+  const { formState, handleSubmit } = form;
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form
+        action={formAction}
+        onSubmit={handleSubmit(() => {})} // This triggers client validation before the action.
+        className="space-y-4"
+      >
         <FormField
           control={form.control}
           name="lawText"
