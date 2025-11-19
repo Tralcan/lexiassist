@@ -1,5 +1,5 @@
 'use client';
-import { useFormState } from 'react-dom';
+import { useActionState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
-    const [state, formAction] = useFormState(handleLogin, { error: null });
+    const [state, formAction] = useActionState(handleLogin, { error: null });
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-background px-4">

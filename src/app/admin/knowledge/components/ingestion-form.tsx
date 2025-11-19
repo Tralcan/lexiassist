@@ -1,6 +1,6 @@
 'use client';
 
-import { useFormState } from 'react-dom';
+import { useActionState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { handleIngestion } from '../actions';
@@ -13,7 +13,7 @@ const initialState = {
 };
 
 export function IngestionForm() {
-  const [state, formAction] = useFormState(handleIngestion, initialState);
+  const [state, formAction] = useActionState(handleIngestion, initialState);
   const formRef = useRef<HTMLFormElement>(null);
   const { toast } = useToast();
 

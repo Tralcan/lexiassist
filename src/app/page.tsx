@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useFormState } from 'react-dom';
+import { useState, useRef, useEffect, useActionState } from 'react';
 import { Paperclip, SendHorizonal, Bot } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,7 @@ const initialState = {
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [formState, formAction] = useFormState(askQuestion, initialState);
+  const [formState, formAction] = useActionState(askQuestion, initialState);
   const formRef = useRef<HTMLFormElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
