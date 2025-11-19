@@ -42,7 +42,7 @@ export function UserNav({ user, profile }: UserNavProps) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={profile?.full_name || user.email || ''} alt={profile?.full_name || user.email || ''} />
+            <AvatarImage src="" alt={profile?.full_name || user.email || ''} />
             <AvatarFallback>{user.email ? getInitials(user.email) : 'U'}</AvatarFallback>
           </Avatar>
         </Button>
