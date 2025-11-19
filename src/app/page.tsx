@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-white">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <Logo />
@@ -71,7 +71,7 @@ export default function LandingPage() {
           </div>
         </section>
       </main>
-      <footer className="flex items-center justify-center h-16 border-t">
+      <footer className="flex items-center justify-center h-16 border-t bg-white">
           <p className="text-sm text-muted-foreground">&copy; 2024 LexiAssist. Todos los derechos reservados.</p>
       </footer>
     </div>
