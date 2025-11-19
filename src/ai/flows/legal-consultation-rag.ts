@@ -61,7 +61,7 @@ const legalConsultationRAGFlow = ai.defineFlow(
     console.log('[RAG Flow] Searching for documents in Supabase...');
     const { data: documents, error } = await supabase.rpc('match_lex_documents', {
         query_embedding: queryEmbedding,
-        match_threshold: 0.78,
+        match_threshold: 0.3, // Lowered from 0.78
         match_count: 5,
     });
 
@@ -80,7 +80,7 @@ const legalConsultationRAGFlow = ai.defineFlow(
         return { answer: "No tengo suficiente información en mi base de conocimiento para responder a tu pregunta." };
     }
 
-    console.log('[RAG Flow] Context created from documents:', context.substring(0, 200) + '...');
+    console.log('[RAG Flow] Context created from documents:', context.substring(0, 500) + '...');
 
 
     // 3. Call the LLM with the context and question
