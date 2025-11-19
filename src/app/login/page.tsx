@@ -25,9 +25,9 @@ export default function LoginPage() {
                     <div className="flex justify-center">
                         <Logo />
                     </div>
-                    <CardTitle className="text-2xl font-headline">Login</CardTitle>
+                    <CardTitle className="text-2xl font-headline">Iniciar Sesión</CardTitle>
                     <CardDescription>
-                        Enter your credentials to access your account
+                        Ingresa tus credenciales para acceder a tu cuenta
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -38,12 +38,12 @@ export default function LoginPage() {
                                 id="email"
                                 name="email"
                                 type="email"
-                                placeholder="m@example.com"
+                                placeholder="m@ejemplo.com"
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password">Password</Label>
+                            <Label htmlFor="password">Contraseña</Label>
                             <Input id="password" name="password" type="password" required />
                         </div>
                         {state?.error && (
@@ -53,7 +53,7 @@ export default function LoginPage() {
                             </Alert>
                         )}
                         <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
-                            Login
+                            Iniciar Sesión
                         </Button>
                     </form>
                 </CardContent>

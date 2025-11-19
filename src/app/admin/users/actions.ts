@@ -5,9 +5,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const userSchema = z.object({
-  fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
+  fullName: z.string().min(2, 'El nombre completo debe tener al menos 2 caracteres.'),
   email: z.string().email(),
-  password: z.string().min(6, 'Password must be at least 6 characters.').optional(),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.').optional(),
   accessExpiresAt: z.date().optional(),
   role: z.enum(['admin', 'user']),
 });
@@ -19,14 +19,14 @@ export async function createUser(data: z.infer<typeof userSchema>) {
   }
   
   if (!data.password) {
-      return { success: false, message: 'Password is required for new users.' };
+      return { success: false, message: 'La contraseña es obligatoria para nuevos usuarios.' };
   }
 
   const supabaseAdmin = createAdminClient();
   const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
     email: data.email,
     password: data.password,
-    email_confirm: true, // Auto-confirm user
+    email_confirm: true, // Auto-confirmar usuario
   });
 
   if (authError) {
@@ -36,7 +36,7 @@ export async function createUser(data: z.infer<typeof userSchema>) {
   const user = authData.user;
   
   if (!user) {
-    return { success: false, message: "Could not create user." };
+    return { success: false, message: "No se pudo crear el usuario." };
   }
 
   const { error: profileError } = await supabaseAdmin.from('lex_profiles').insert({
@@ -48,13 +48,13 @@ export async function createUser(data: z.infer<typeof userSchema>) {
   });
 
   if (profileError) {
-    // If profile creation fails, we should probably delete the auth user
+    // Si la creación del perfil falla, probablemente deberíamos eliminar el usuario de auth
     await supabaseAdmin.auth.admin.deleteUser(user.id);
     return { success: false, message: profileError.message };
   }
   
   revalidatePath('/admin/users');
-  return { success: true, message: 'User created successfully.', user: {...user, profile: data} };
+  return { success: true, message: 'Usuario creado con éxito.', user: {...user, profile: data} };
 }
 
 export async function updateUser(userId: string, data: Partial<z.infer<typeof userSchema>>) {
@@ -80,7 +80,7 @@ export async function updateUser(userId: string, data: Partial<z.infer<typeof us
 
 
   revalidatePath('/admin/users');
-  return { success: true, message: 'User updated successfully.', user: {...updatedUser.user, profile }};
+  return { success: true, message: 'Usuario actualizado con éxito.', user: {...updatedUser.user, profile }};
 }
 
 export async function forcePasswordChange(email: string) {
@@ -89,7 +89,7 @@ export async function forcePasswordChange(email: string) {
     if(error) {
         return { success: false, message: error.message };
     }
-    return { success: true, message: `Password reset link sent to ${email}.` };
+    return { success: true, message: `Enlace para restablecer contraseña enviado a ${email}.` };
 }
 
 export async function disableUser(userId: string, currentStatus: boolean) {
@@ -105,5 +105,5 @@ export async function disableUser(userId: string, currentStatus: boolean) {
     }
     
     revalidatePath('/admin/users');
-    return { success: true, message: `User successfully ${newStatus ? 'disabled' : 'enabled'}.` };
+    return { success: true, message: `Usuario ${newStatus ? 'deshabilitado' : 'habilitado'} correctamente.` };
 }

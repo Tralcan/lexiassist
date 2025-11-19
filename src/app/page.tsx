@@ -11,7 +11,7 @@ export default function LandingPage() {
         <div className="container flex h-16 items-center justify-between">
           <Logo />
           <Button asChild>
-            <Link href="/login">Login</Link>
+            <Link href="/login">Iniciar Sesión</Link>
           </Button>
         </div>
       </header>

@@ -32,7 +32,7 @@ export default async function Header() {
             <UserNav user={user} profile={profile} />
           ) : (
             <Button asChild>
-              <Link href="/login">Login</Link>
+              <Link href="/login">Iniciar Sesión</Link>
             </Button>
           )}
         </div>

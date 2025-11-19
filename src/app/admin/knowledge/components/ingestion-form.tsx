@@ -12,7 +12,7 @@ import { handleIngestion } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
-  lawText: z.string().min(1, 'Law text cannot be empty.'),
+  lawText: z.string().min(1, 'El texto de la ley no puede estar vacío.'),
 });
 
 const initialState = {
@@ -34,7 +34,7 @@ export function IngestionForm() {
   useEffect(() => {
     if (state.message) {
       if (state.success) {
-        toast({ title: 'Success', description: state.message });
+        toast({ title: 'Éxito', description: state.message });
         form.reset();
       } else {
         toast({ variant: 'destructive', title: 'Error', description: state.message });
@@ -55,10 +55,10 @@ export function IngestionForm() {
           name="lawText"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Law Text</FormLabel>
+              <FormLabel>Texto de la Ley</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Paste the full text of the law here..."
+                  placeholder="Pega aquí el texto completo de la ley..."
                   className="min-h-[300px]"
                   {...field}
                 />
@@ -68,7 +68,7 @@ export function IngestionForm() {
           )}
         />
         <Button type="submit" disabled={formState.isSubmitting}>
-          {formState.isSubmitting ? 'Processing...' : 'Process and Ingest'}
+          {formState.isSubmitting ? 'Procesando...' : 'Procesar e Ingerir'}
         </Button>
       </form>
     </Form>

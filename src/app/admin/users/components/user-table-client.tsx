@@ -58,7 +58,7 @@ export default function UserTableClient({ users: initialUsers }: { users: UserWi
   const handleForcePasswordChange = async (email: string) => {
      const result = await forcePasswordChange(email);
      if(result.success) {
-        toast({ title: "Success", description: result.message });
+        toast({ title: "Éxito", description: result.message });
      } else {
         toast({ variant: "destructive", title: "Error", description: result.message });
      }
@@ -67,8 +67,8 @@ export default function UserTableClient({ users: initialUsers }: { users: UserWi
   const handleDisableUser = async (userId: string, currentStatus: boolean) => {
     const result = await disableUser(userId, currentStatus);
     if(result.success) {
-      toast({ title: "Success", description: result.message });
-      // Optimistically update UI
+      toast({ title: "Éxito", description: result.message });
+      // Actualización optimista de la UI
       setUsers(users.map(u => u.id === userId ? {...u, raw_user_meta_data: {...u.raw_user_meta_data, disabled: !currentStatus}} : u));
     } else {
       toast({ variant: "destructive", title: "Error", description: result.message });
@@ -81,13 +81,13 @@ export default function UserTableClient({ users: initialUsers }: { users: UserWi
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>
-              <CardTitle>Users</CardTitle>
-              <CardDescription>Manage your users and their access.</CardDescription>
+              <CardTitle>Usuarios</CardTitle>
+              <CardDescription>Gestiona tus usuarios y sus accesos.</CardDescription>
             </div>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1" onClick={handleCreate}>
                 <PlusCircle className="h-4 w-4" />
-                Add User
+                Añadir Usuario
               </Button>
             </DialogTrigger>
           </div>
@@ -96,12 +96,12 @@ export default function UserTableClient({ users: initialUsers }: { users: UserWi
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Access Expires</TableHead>
+                <TableHead>Usuario</TableHead>
+                <TableHead>Rol</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Acceso Expira</TableHead>
                 <TableHead>
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">Acciones</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -115,27 +115,27 @@ export default function UserTableClient({ users: initialUsers }: { users: UserWi
                   <TableCell>{user.profile?.role || 'user'}</TableCell>
                    <TableCell>
                     <Badge variant={user.raw_user_meta_data?.disabled ? "secondary" : "default"}>
-                        {user.raw_user_meta_data?.disabled ? 'Disabled' : 'Active'}
+                        {user.raw_user_meta_data?.disabled ? 'Deshabilitado' : 'Activo'}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {user.profile?.access_expires_at ? format(new Date(user.profile.access_expires_at), 'PPP') : 'Never'}
+                    {user.profile?.access_expires_at ? format(new Date(user.profile.access_expires_at), 'PPP') : 'Nunca'}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button aria-haspopup="true" size="icon" variant="ghost">
                           <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
+                          <span className="sr-only">Alternar menú</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEdit(user)}>Edit</DropdownMenuItem>
+                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleEdit(user)}>Editar</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDisableUser(user.id, !!user.raw_user_meta_data?.disabled)}>
-                            {user.raw_user_meta_data?.disabled ? "Enable" : "Disable"}
+                            {user.raw_user_meta_data?.disabled ? "Habilitar" : "Deshabilitar"}
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleForcePasswordChange(user.email!)}>Force Password Change</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleForcePasswordChange(user.email!)}>Forzar Cambio de Contraseña</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

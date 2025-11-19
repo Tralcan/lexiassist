@@ -27,8 +27,8 @@ export default function AdminLayout({
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              <NavLink href="/admin/users" icon={Users}>Users</NavLink>
-              <NavLink href="/admin/knowledge" icon={BookText}>Knowledge</NavLink>
+              <NavLink href="/admin/users" icon={Users}>Usuarios</NavLink>
+              <NavLink href="/admin/knowledge" icon={BookText}>Conocimiento</NavLink>
             </nav>
           </div>
         </div>
@@ -43,7 +43,7 @@ export default function AdminLayout({
                 className="shrink-0 md:hidden"
               >
                 <PanelLeft className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
+                <span className="sr-only">Alternar menú de navegación</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
@@ -54,13 +54,13 @@ export default function AdminLayout({
                 >
                   <Logo />
                 </Link>
-                <NavLink href="/admin/users" icon={Users}>Users</NavLink>
-                <NavLink href="/admin/knowledge" icon={BookText}>Knowledge</NavLink>
+                <NavLink href="/admin/users" icon={Users}>Usuarios</NavLink>
+                <NavLink href="/admin/knowledge" icon={BookText}>Conocimiento</NavLink>
               </nav>
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-            <h1 className="text-lg font-semibold">Admin Dashboard</h1>
+            <h1 className="text-lg font-semibold">Panel de Administración</h1>
           </div>
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-background">

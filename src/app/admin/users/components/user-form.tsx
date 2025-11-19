@@ -34,16 +34,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 type UserWithProfile = User & { profile: Profile | null };
 
 const formSchema = z.object({
-  fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
-  email: z.string().email(),
+  fullName: z.string().min(2, 'El nombre completo debe tener al menos 2 caracteres.'),
+  email: z.string().email('Email inválido.'),
   password: z.string().optional(),
   accessExpiresAt: z.date().optional(),
   role: z.enum(['admin', 'user']),
 }).refine(data => {
-    // If it's a new user (no id), password is required
+    // Si es un nuevo usuario (sin id), la contraseña es obligatoria
     return !data.password || data.password.length >= 6;
 }, {
-    message: "Password must be at least 6 characters.",
+    message: "La contraseña debe tener al menos 6 caracteres.",
     path: ["password"],
 });
 
@@ -75,7 +75,7 @@ export function UserForm({ user, onUserCreated, onUserUpdated, setOpen }: UserFo
       : await createUser(values);
 
     if (result.success) {
-        toast({ title: 'Success', description: `User successfully ${isEditMode ? 'updated' : 'created'}.` });
+        toast({ title: 'Éxito', description: `Usuario ${isEditMode ? 'actualizado' : 'creado'} correctamente.` });
         if(isEditMode) {
             onUserUpdated(result.user!);
         } else {
@@ -90,9 +90,9 @@ export function UserForm({ user, onUserCreated, onUserUpdated, setOpen }: UserFo
   return (
     <DialogContent className="sm:max-w-[425px]">
       <DialogHeader>
-        <DialogTitle>{isEditMode ? 'Edit User' : 'Create User'}</DialogTitle>
+        <DialogTitle>{isEditMode ? 'Editar Usuario' : 'Crear Usuario'}</DialogTitle>
         <DialogDescription>
-          {isEditMode ? "Update the user's details." : 'Fill in the details to create a new user.'}
+          {isEditMode ? "Actualiza los detalles del usuario." : 'Completa los detalles para crear un nuevo usuario.'}
         </DialogDescription>
       </DialogHeader>
       <Form {...form}>
@@ -102,7 +102,7 @@ export function UserForm({ user, onUserCreated, onUserUpdated, setOpen }: UserFo
             name="fullName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Full Name</FormLabel>
+                <FormLabel>Nombre Completo</FormLabel>
                 <FormControl><Input {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
@@ -125,7 +125,7 @@ export function UserForm({ user, onUserCreated, onUserUpdated, setOpen }: UserFo
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>Contraseña</FormLabel>
                   <FormControl><Input type="password" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -137,16 +137,16 @@ export function UserForm({ user, onUserCreated, onUserUpdated, setOpen }: UserFo
             name="role"
             render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Role</FormLabel>
+                    <FormLabel>Rol</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select a role" />
+                                <SelectValue placeholder="Selecciona un rol" />
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="user">User</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="user">Usuario</SelectItem>
+                            <SelectItem value="admin">Administrador</SelectItem>
                         </SelectContent>
                     </Select>
                     <FormMessage />
@@ -158,7 +158,7 @@ export function UserForm({ user, onUserCreated, onUserUpdated, setOpen }: UserFo
             name="accessExpiresAt"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Access Expiration</FormLabel>
+                <FormLabel>Expiración de Acceso</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -166,7 +166,7 @@ export function UserForm({ user, onUserCreated, onUserUpdated, setOpen }: UserFo
                         variant={'outline'}
                         className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')}
                       >
-                        {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                        {field.value ? format(field.value, 'PPP') : <span>Elige una fecha</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
                     </FormControl>
@@ -187,7 +187,7 @@ export function UserForm({ user, onUserCreated, onUserUpdated, setOpen }: UserFo
 
           <DialogFooter>
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? 'Saving...' : 'Save User'}
+              {form.formState.isSubmitting ? 'Guardando...' : 'Guardar Usuario'}
             </Button>
           </DialogFooter>
         </form>
