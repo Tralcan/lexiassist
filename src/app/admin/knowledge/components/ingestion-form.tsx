@@ -42,9 +42,18 @@ export function IngestionForm() {
     }
   }, [state, toast, form]);
 
+  const { formState, handleSubmit } = form;
+
   return (
     <Form {...form}>
-      <form action={form.handleSubmit(() => formAction(new FormData(form.control._formValues.current)))} className="space-y-4">
+      <form
+        action={formAction}
+        onSubmit={handleSubmit(() => {
+          // We still need handleSubmit for client-side validation
+          // but the action will be triggered by the form's action prop.
+        })}
+        className="space-y-4"
+      >
         <FormField
           control={form.control}
           name="lawText"
@@ -62,8 +71,8 @@ export function IngestionForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? 'Processing...' : 'Process and Ingest'}
+        <Button type="submit" disabled={formState.isSubmitting}>
+          {formState.isSubmitting ? 'Processing...' : 'Process and Ingest'}
         </Button>
       </form>
     </Form>
