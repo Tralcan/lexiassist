@@ -1,17 +1,16 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import UserTableClient from './components/user-table-client';
-import { Profile } from '@/types';
 
 async function getUsers() {
-    const supabase = createClient();
-    const { data: usersData, error: usersError } = await supabase.auth.admin.listUsers();
+    const supabase = createAdminClient();
+    const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
 
     if (usersError) {
         console.error('Error fetching users:', usersError);
         return [];
     }
 
-    const userIds = usersData.users.map(u => u.id);
+    const userIds = users.map(u => u.id);
     const { data: profilesData, error: profilesError } = await supabase
         .from('lex_profiles')
         .select('*')
@@ -23,7 +22,7 @@ async function getUsers() {
     
     const profilesMap = new Map(profilesData?.map(p => [p.id, p]));
 
-    const usersWithProfiles = usersData.users.map(user => ({
+    const usersWithProfiles = users.map(user => ({
         ...user,
         profile: profilesMap.get(user.id) || null
     }));
