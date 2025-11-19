@@ -9,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import { createAdminClient } from '@/lib/supabase/admin';
 import {z} from 'genkit';
 
 const LegalConsultationRAGInputSchema = z.object({
@@ -27,9 +28,12 @@ export async function legalConsultationRAG(input: LegalConsultationRAGInput): Pr
 
 const prompt = ai.definePrompt({
   name: 'legalConsultationRAGPrompt',
-  input: {schema: LegalConsultationRAGInputSchema},
+  input: {schema: z.object({
+    question: z.string(),
+    context: z.string(),
+  })},
   output: {schema: LegalConsultationRAGOutputSchema},
-  prompt: `You are a legal assistant specialized in Chilean law. Answer the user's question using the provided context.\n\nContext:\n{{context}}\n\nQuestion: {{{question}}}`,
+  prompt: `You are a legal assistant specialized in Chilean law. You MUST answer in Spanish. Answer the user's question using ONLY the provided context. If the context is not sufficient, say that you don't have enough information to answer.\n\nContext:\n{{context}}\n\nQuestion: {{{question}}}`,
 });
 
 const legalConsultationRAGFlow = ai.defineFlow(
@@ -39,10 +43,32 @@ const legalConsultationRAGFlow = ai.defineFlow(
     outputSchema: LegalConsultationRAGOutputSchema,
   },
   async input => {
-    // TODO: Implement vectorizing the question and searching Supabase for relevant legal fragments.
-    // For now, use a placeholder context.
-    const context = 'This is a placeholder context. Replace with actual legal fragments from Supabase.';
+    const supabase = createAdminClient();
 
+    // 1. Vectorize the user's question
+    const { embedding } = await ai.embed({
+        embedder: 'googleai/embedding-004',
+        content: input.question,
+    });
+
+    // 2. Search Supabase for relevant legal fragments
+    const { data: documents, error } = await supabase.rpc('match_documents', {
+        query_embedding: embedding,
+        match_threshold: 0.78,
+        match_count: 5,
+    });
+
+    if (error) {
+        throw new Error(`Error fetching documents from Supabase: ${error.message}`);
+    }
+
+    const context = documents.map((doc: any) => doc.content).join('\n\n');
+    
+    if(!context){
+        return { answer: "No tengo suficiente información en mi base de conocimiento para responder a tu pregunta." };
+    }
+
+    // 3. Call the LLM with the context and question
     const {output} = await prompt({...input, context});
     return output!;
   }

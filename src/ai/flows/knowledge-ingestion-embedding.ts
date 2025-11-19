@@ -11,6 +11,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import { createAdminClient } from '@/lib/supabase/admin';
 import {z} from 'genkit';
 
 const KnowledgeIngestionEmbeddingInputSchema = z.object({
@@ -41,13 +42,49 @@ const knowledgeIngestionEmbeddingFlow = ai.defineFlow(
     outputSchema: KnowledgeIngestionEmbeddingOutputSchema,
   },
   async input => {
-    // TODO: Implement chunking, embedding generation, and storage in Supabase/pgvector
-    // This is a placeholder implementation
-    console.log('Law Text:', input.lawText);
+    try {
+      const supabase = createAdminClient();
+      
+      // 1. Chunk the text (simple split by newline for paragraphs)
+      const chunks = input.lawText.split('\n').filter(chunk => chunk.trim().length > 10);
+      if (chunks.length === 0) {
+        return { success: false, message: 'No text chunks to process. Ensure the text has paragraphs.' };
+      }
+      
+      // 2. Generate embeddings for each chunk
+      const {embeddings} = await ai.embed({
+          embedder: 'googleai/embedding-004',
+          content: chunks,
+      });
 
-    return {
-      success: true,
-      message: 'Knowledge ingestion flow executed successfully. Chunking, embedding, and storage are not yet implemented.',
-    };
+      if (embeddings.length !== chunks.length) {
+        return { success: false, message: 'Mismatch between number of chunks and embeddings.' };
+      }
+
+      // 3. Prepare data for Supabase
+      const documents = chunks.map((chunk, i) => ({
+        content: chunk,
+        embedding: embeddings[i],
+      }));
+      
+      // 4. Store in Supabase
+      const { error } = await supabase.from('lex_documents').insert(documents);
+
+      if (error) {
+        throw new Error(`Supabase error: ${error.message}`);
+      }
+
+      return {
+        success: true,
+        message: `Successfully ingested and embedded ${documents.length} document chunks.`,
+      };
+
+    } catch (error: any) {
+        console.error("Error in knowledge ingestion flow:", error);
+        return {
+            success: false,
+            message: error.message || "An unknown error occurred during ingestion."
+        }
+    }
   }
 );
