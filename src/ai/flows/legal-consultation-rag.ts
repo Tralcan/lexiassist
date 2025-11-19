@@ -46,14 +46,17 @@ const legalConsultationRAGFlow = ai.defineFlow(
     const supabase = createAdminClient();
 
     // 1. Vectorize the user's question
-    const { embedding } = await ai.embed({
+    const embeddingResult = await ai.embed({
         embedder: 'googleai/text-embedding-004',
         content: input.question,
     });
+    
+    const queryEmbedding = embeddingResult.embedding;
+
 
     // 2. Search Supabase for relevant legal fragments
     const { data: documents, error } = await supabase.rpc('match_documents', {
-        query_embedding: embedding,
+        query_embedding: queryEmbedding,
         match_threshold: 0.78,
         match_count: 5,
     });

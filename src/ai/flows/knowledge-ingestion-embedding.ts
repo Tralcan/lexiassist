@@ -65,10 +65,10 @@ const knowledgeIngestionEmbeddingFlow = ai.defineFlow(
         throw new Error('Mismatch between number of chunks and embeddings generated.');
       }
 
-      // 3. Prepare data for Supabase
+      // 3. Prepare data for Supabase, correctly extracting the vector.
       const documents = chunks.map((chunk, i) => ({
         content: chunk,
-        embedding: embeddings[i],
+        embedding: embeddings[i].embedding,
       }));
       
       // 4. Store in Supabase
