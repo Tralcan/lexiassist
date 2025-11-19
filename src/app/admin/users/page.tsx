@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { createAdminClient } from '@/lib/supabase/admin';
 import UserTableClient from './components/user-table-client';
 
@@ -7,7 +8,7 @@ async function getUsers() {
 
     if (usersError) {
         console.error('Error fetching users:', usersError);
-        return [];
+        throw usersError;
     }
 
     const userIds = users.map(u => u.id);

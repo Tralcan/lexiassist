@@ -1,5 +1,5 @@
 'use server';
-
+import 'dotenv/config';
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
