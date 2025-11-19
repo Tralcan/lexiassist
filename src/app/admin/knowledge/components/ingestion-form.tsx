@@ -48,6 +48,9 @@ export function IngestionForm() {
     <Form {...form}>
       <form
         action={formAction}
+        onSubmit={form.handleSubmit(() => {
+          // This allows client-side validation before server action
+        })}
         className="space-y-4"
       >
         <FormField
@@ -61,6 +64,7 @@ export function IngestionForm() {
                   placeholder="Paste the full text of the law here..."
                   className="min-h-[300px]"
                   {...field}
+                  {...form.register('lawText')}
                 />
               </FormControl>
               <FormMessage />
