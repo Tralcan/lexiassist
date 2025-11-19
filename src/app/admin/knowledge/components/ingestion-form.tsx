@@ -22,7 +22,7 @@ const initialState = {
 };
 
 export function IngestionForm() {
-  const [state, formAction] = useActionState(handleIngestion, initialState);
+  const [state, formAction, isPending] = useActionState(handleIngestion, initialState);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -33,6 +33,7 @@ export function IngestionForm() {
   });
 
   useEffect(() => {
+    // Evitamos mostrar el toast inicial
     if (state.message) {
       if (state.success) {
         toast({ title: 'Éxito', description: state.message });
@@ -43,7 +44,6 @@ export function IngestionForm() {
     }
   }, [state, toast, form]);
 
-  const { formState } = form;
 
   return (
     <Form {...form}>
@@ -62,14 +62,15 @@ export function IngestionForm() {
                   placeholder="Pega aquí el texto completo de la ley..."
                   className="min-h-[300px]"
                   {...field}
+                  disabled={isPending}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={formState.isSubmitting}>
-          {formState.isSubmitting ? (
+        <Button type="submit" disabled={isPending}>
+          {isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Procesando...
