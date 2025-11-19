@@ -15,39 +15,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { createClient } from '@/lib/supabase/client';
-import { useEffect, useState } from 'react';
+import type { Profile } from '@/types';
 
 type UserNavProps = {
   user: User;
+  profile: Profile | null;
 };
 
-export function UserNav({ user }: UserNavProps) {
+export function UserNav({ user, profile }: UserNavProps) {
   const router = useRouter();
   const supabase = createClient();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    const checkAdminRole = async () => {
-      const { data } = await supabase
-        .from('lex_profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-      
-      if (isMounted) {
-        setIsAdmin(data?.role === 'admin');
-      }
-    };
-
-    if (user) {
-      checkAdminRole();
-    }
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [supabase, user]);
+  const isAdmin = profile?.role === 'admin';
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -64,7 +42,7 @@ export function UserNav({ user }: UserNavProps) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src="/avatars/01.png" alt={user.email || ''} />
+            <AvatarImage src={profile?.full_name || user.email || ''} alt={profile?.full_name || user.email || ''} />
             <AvatarFallback>{user.email ? getInitials(user.email) : 'U'}</AvatarFallback>
           </Avatar>
         </Button>
@@ -72,7 +50,7 @@ export function UserNav({ user }: UserNavProps) {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Logged in as</p>
+            <p className="text-sm font-medium leading-none">{profile?.full_name || 'User'}</p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>
@@ -80,7 +58,7 @@ export function UserNav({ user }: UserNavProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          {isAdmin === true && (
+          {isAdmin && (
              <Link href="/admin">
               <DropdownMenuItem>
                 Admin Dashboard

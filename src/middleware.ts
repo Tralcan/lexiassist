@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import type { CookieOptions } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -39,45 +38,41 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // IMPORTANT: This refreshes the session and must be called before any other Supabase method
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
+  // This refreshes the session
+  const { data: { user } } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
 
   const publicPaths = ['/login', '/'];
-  const isPublicPath = publicPaths.some(p => pathname.startsWith(p) && p !== '/') || pathname === '/';
-  
-  // If user is trying to access a protected route without a session, redirect to login
+  const isPublicPath = publicPaths.includes(pathname);
+
+  // If user is not logged in and trying to access a protected route
   if (!user && !isPublicPath) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
-
-  // If user is logged in and tries to access login page, redirect to chat
-  if (user && pathname.startsWith('/login')) {
+  
+  // If user is logged in and tries to access login page, redirect them
+  if(user && pathname === '/login') {
     return NextResponse.redirect(new URL('/chat', request.url));
   }
 
   // Protect admin routes
   if (pathname.startsWith('/admin')) {
     if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return NextResponse.redirect(new URL('/login?message=You must be logged in to access this page.', request.url));
     }
     
-    // Fetch user role from the database
     const { data: profile, error } = await supabase
       .from('lex_profiles')
       .select('role')
       .eq('id', user.id)
       .single();
 
-    if (error || profile?.role !== 'admin') {
-      // If there's an error or the user is not an admin, redirect them
+    if (error || !profile || profile.role !== 'admin') {
       return NextResponse.redirect(new URL('/chat', request.url));
     }
   }
 
-  // If all checks pass, continue to the requested route
   return response;
 }
 
@@ -88,6 +83,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - public assets (e.g. /images, /logo.svg)
      * Feel free to modify this pattern to include more paths.
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
