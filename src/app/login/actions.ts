@@ -26,9 +26,9 @@ export async function handleLogin(prevState: any, formData: FormData) {
       .single();
 
     if (profile?.role === 'admin') {
-      redirect('/admin');
+      return redirect('/admin');
     }
   }
 
-  redirect('/chat');
+  return redirect('/chat');
 }
