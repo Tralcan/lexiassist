@@ -12,7 +12,7 @@ import { handleIngestion } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
-  lawText: z.string().min(50, 'Law text must be at least 50 characters long.'),
+  lawText: z.string().min(1, 'Law text cannot be empty.'),
 });
 
 const initialState = {
@@ -42,13 +42,12 @@ export function IngestionForm() {
     }
   }, [state, toast, form]);
 
-  const { formState, handleSubmit } = form;
+  const { formState } = form;
 
   return (
     <Form {...form}>
       <form
         action={formAction}
-        onSubmit={handleSubmit(() => {})} // This triggers client validation before the action.
         className="space-y-4"
       >
         <FormField
