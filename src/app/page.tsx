@@ -8,7 +8,7 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
+        <div className="flex h-16 items-center justify-between px-6">
           <Logo />
           <Button asChild>
             <Link href="/login">Iniciar Sesión</Link>
