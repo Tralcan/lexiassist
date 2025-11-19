@@ -50,24 +50,18 @@ const knowledgeIngestionEmbeddingFlow = ai.defineFlow(
         return { success: false, message: 'No text chunks to process. Ensure the text has paragraphs.' };
       }
       
-      const embeddingPromises = chunks.map(chunk => 
-        ai.embed({
-          embedder: 'googleai/text-embedding-004',
-          content: chunk,
+      const documents = await Promise.all(
+        chunks.map(async (chunk) => {
+          const embedding = await ai.embed({
+            embedder: 'googleai/text-embedding-004',
+            content: chunk,
+          });
+          return {
+            content: chunk,
+            embedding: embedding, // ai.embed for a single content returns number[] directly
+          };
         })
       );
-      
-      const embeddings = await Promise.all(embeddingPromises);
-
-      if (!embeddings || embeddings.length !== chunks.length) {
-        throw new Error('Mismatch between number of chunks and embeddings generated.');
-      }
-
-      // The result from ai.embed is the vector itself (number[]).
-      const documents = chunks.map((chunk, i) => ({
-        content: chunk,
-        embedding: embeddings[i],
-      }));
       
       const { error } = await supabase.from('lex_documents').insert(documents);
 
