@@ -54,10 +54,7 @@ const knowledgeIngestionEmbeddingFlow = ai.defineFlow(
       // 2. Generate embeddings for each chunk using ai.generate for more control
       const embeddingResponse = await ai.generate({
         model: 'googleai/embedding-004',
-        prompt: chunks,
-        config: {
-            task: 'RETRIEVAL_DOCUMENT' // Specify the task for better embeddings
-        }
+        prompt: chunks
       });
 
       const embeddings = embeddingResponse.embeddings;
