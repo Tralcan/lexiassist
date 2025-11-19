@@ -50,18 +50,15 @@ const legalConsultationRAGFlow = ai.defineFlow(
         embedder: 'googleai/text-embedding-004',
         content: input.question,
     });
-
-    // The response is an array with one object: [{ embedding: [...] }]
-    // We need to extract the raw vector.
-    const queryEmbedding = embeddingResponse[0]?.embedding;
+    
+    const queryEmbedding = embeddingResponse;
 
     if (!queryEmbedding) {
         throw new Error("Failed to generate embedding for the question.");
     }
 
-
     // 2. Search Supabase for relevant legal fragments
-    const { data: documents, error } = await supabase.rpc('match_documents', {
+    const { data: documents, error } = await supabase.rpc('match_lex_documents', {
         query_embedding: queryEmbedding,
         match_threshold: 0.78,
         match_count: 5,
