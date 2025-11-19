@@ -32,7 +32,6 @@ const prompt = ai.definePrompt({
     question: z.string(),
     context: z.string(),
   })},
-  output: {schema: LegalConsultationRAGOutputSchema},
   prompt: `You are a legal assistant specialized in Chilean law. You MUST answer in Spanish. Answer the user's question using ONLY the provided context. If the context is not sufficient, say that you don't have enough information to answer.\n\nContext:\n{{context}}\n\nQuestion: {{{question}}}`,
 });
 
@@ -47,12 +46,12 @@ const legalConsultationRAGFlow = ai.defineFlow(
     const supabase = createAdminClient();
 
     // 1. Vectorize the user's question
-    const embedding = await ai.embed({
+    const embeddingResponse = await ai.embed({
         embedder: 'googleai/text-embedding-004',
         content: input.question,
     });
     
-    const queryEmbedding = embedding;
+    const queryEmbedding = embeddingResponse;
     console.log('[RAG Flow] Generated query embedding:', queryEmbedding ? `Vector of dimension ${queryEmbedding.length}` : 'null');
 
 
@@ -88,9 +87,9 @@ const legalConsultationRAGFlow = ai.defineFlow(
 
     // 3. Call the LLM with the context and question
     console.log('[RAG Flow] Calling LLM with context...');
-    const {output} = await prompt({...input, context});
+    const llmResponse = await prompt({...input, context});
     
     console.log('[RAG Flow] Received answer from LLM.');
-    return output!;
+    return { answer: llmResponse.text };
   }
 );
