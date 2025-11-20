@@ -1,7 +1,7 @@
 'use client';
 
 import { NavLink } from './nav-link';
-import { Users, BookText, PanelLeft } from 'lucide-react';
+import { Users, BookText, PanelLeft, DatabaseZap, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -28,7 +28,9 @@ export default function AdminLayout({
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
               <NavLink href="/admin/users" icon={Users}>Usuarios</NavLink>
-              <NavLink href="/admin/knowledge" icon={BookText}>Conocimiento</NavLink>
+              <NavLink href="/admin/knowledge" icon={BookText}>Ingesta de Conocimiento</NavLink>
+              <NavLink href="/admin/knowledge-management" icon={DatabaseZap}>Gestión de Conocimiento</NavLink>
+              <NavLink href="/chat" icon={MessageSquare}>Chat</NavLink>
             </nav>
           </div>
         </div>
@@ -55,7 +57,9 @@ export default function AdminLayout({
                   <Logo />
                 </Link>
                 <NavLink href="/admin/users" icon={Users}>Usuarios</NavLink>
-                <NavLink href="/admin/knowledge" icon={BookText}>Conocimiento</NavLink>
+                <NavLink href="/admin/knowledge" icon={BookText}>Ingesta de Conocimiento</NavLink>
+                <NavLink href="/admin/knowledge-management" icon={DatabaseZap}>Gestión de Conocimiento</NavLink>
+                <NavLink href="/chat" icon={MessageSquare}>Chat</NavLink>
               </nav>
             </SheetContent>
           </Sheet>
