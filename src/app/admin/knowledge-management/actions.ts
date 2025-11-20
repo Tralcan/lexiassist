@@ -93,3 +93,22 @@ export async function deleteDocumentsByDate(date: string): Promise<ActionRespons
     return { success: false, message: `Error en la eliminación masiva: ${error.message}` };
   }
 }
+
+export async function updateDocumentContent(id: string, content: string): Promise<ActionResponse> {
+  if (!id || !content) {
+    return { success: false, message: 'Se requiere ID y contenido para actualizar.' };
+  }
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from('lex_documents')
+      .update({ content })
+      .match({ id });
+
+    if (error) throw error;
+    revalidatePath('/admin/knowledge-management');
+    return { success: true, message: 'Fragmento actualizado con éxito.' };
+  } catch (error: any) {
+    return { success: false, message: `Error al actualizar el fragmento: ${error.message}` };
+  }
+}
