@@ -4,11 +4,22 @@ import { useActionState, useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { askQuestion, getChatHistory } from '../actions';
-import { AlertCircle, Bot, User, Loader2, Scale } from 'lucide-react';
+import { askQuestion, getChatHistory, clearChatHistory } from '../actions';
+import { AlertCircle, Bot, User, Loader2, Scale, Trash2 } from 'lucide-react';
 import { useFormStatus } from 'react-dom';
 import { Skeleton } from '@/components/ui/skeleton';
-
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
 
 type Conversation = {
   question: string;
@@ -82,6 +93,7 @@ export default function ChatPage() {
   const [history, setHistory] = useState<Conversation[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const formRef = useRef<HTMLFormElement>(null);
+  const { toast } = useToast();
   
   useEffect(() => {
     async function loadHistory() {
@@ -100,16 +112,54 @@ export default function ChatPage() {
     }
   }, [state, isPending]);
 
+  const handleClearHistory = async () => {
+    const result = await clearChatHistory();
+    if(result.success) {
+        setHistory([]);
+        toast({ title: "Éxito", description: "El historial de chat ha sido limpiado."});
+    } else {
+        toast({ variant: "destructive", title: "Error", description: result.message });
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
        <Card>
         <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-                <Bot /> Asistente Legal Virtual
-            </CardTitle>
-            <CardDescription>
-                Realiza tu consulta sobre la legislación chilena. Tu historial de conversación se guardará aquí.
-            </CardDescription>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                    <Bot /> Asistente Legal Virtual
+                </CardTitle>
+                <CardDescription>
+                    Realiza tu consulta sobre la legislación chilena. Tu historial de conversación se guardará aquí.
+                </CardDescription>
+              </div>
+              {history.length > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Limpiar Historial
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Estás seguro de limpiar el historial?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta acción ocultará permanentemente todas tus conversaciones. No podrás recuperarlas.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleClearHistory} className="bg-destructive hover:bg-destructive/90">
+                        Sí, limpiar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
         </CardHeader>
         <CardContent>
              <form ref={formRef} action={formAction} className="space-y-4">

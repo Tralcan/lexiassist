@@ -41,7 +41,6 @@ export async function askQuestion(prevState: any, formData: FormData) {
         // No bloqueamos la respuesta al usuario, pero sí registramos el error
     }
 
-    revalidatePath('/chat');
     return { question: question, answer: result.answer, error: '' };
 
   } catch (error: any) {
@@ -69,4 +68,31 @@ export async function getChatHistory(): Promise<ConversationState[]> {
     }
 
     return (data as ConversationState[]) || [];
+}
+
+export async function clearChatHistory(): Promise<{ success: boolean; message?: string }> {
+  try {
+    const supabase = createClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      throw new Error('Autenticación requerida.');
+    }
+
+    const { error: updateError } = await supabase
+      .from('lex_chat_history')
+      .update({ visible: false })
+      .eq('user_id', user.id);
+
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+    
+    revalidatePath('/chat');
+    return { success: true };
+
+  } catch (error: any) {
+    console.error("Error al limpiar el historial de chat:", error.message);
+    return { success: false, message: error.message };
+  }
 }
