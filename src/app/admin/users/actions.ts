@@ -39,22 +39,30 @@ export async function createUser(data: z.infer<typeof userSchema>) {
     return { success: false, message: "No se pudo crear el usuario." };
   }
 
-  const { error: profileError } = await supabaseAdmin.from('lex_profiles').insert({
-    id: user.id,
-    full_name: data.fullName,
-    email: data.email,
-    access_expires_at: data.accessExpiresAt?.toISOString(),
-    role: data.role,
-  });
+  // En lugar de INSERT, hacemos un UPDATE.
+  // Suponemos que un trigger en la base de datos ya creó un perfil básico.
+  const { error: profileError } = await supabaseAdmin
+    .from('lex_profiles')
+    .update({
+      full_name: data.fullName,
+      email: data.email,
+      access_expires_at: data.accessExpiresAt?.toISOString(),
+      role: data.role,
+    })
+    .eq('id', user.id);
+
 
   if (profileError) {
-    // Si la creación del perfil falla, probablemente deberíamos eliminar el usuario de auth
+    // Si la actualización del perfil falla, eliminamos el usuario de auth para mantener la consistencia.
     await supabaseAdmin.auth.admin.deleteUser(user.id);
-    return { success: false, message: profileError.message };
+    return { success: false, message: `Error al actualizar el perfil: ${profileError.message}` };
   }
+
+  // Obtenemos el perfil actualizado para devolverlo
+  const {data: profile} = await supabaseAdmin.from('lex_profiles').select('*').eq('id', user.id).single();
   
   revalidatePath('/admin/users');
-  return { success: true, message: 'Usuario creado con éxito.', user: {...user, profile: data} };
+  return { success: true, message: 'Usuario creado con éxito.', user: {...user, profile } };
 }
 
 export async function updateUser(userId: string, data: Partial<z.infer<typeof userSchema>>) {
@@ -96,6 +104,8 @@ export async function disableUser(userId: string, currentStatus: boolean) {
     const supabaseAdmin = createAdminClient();
     const newStatus = !currentStatus;
 
+    // Aquí estamos actualizando los metadatos del usuario en `auth.users`.
+    // La columna 'disabled' no es estándar en `auth.users`, sino en los metadatos.
     const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         user_metadata: { disabled: newStatus }
     });
@@ -107,3 +117,4 @@ export async function disableUser(userId: string, currentStatus: boolean) {
     revalidatePath('/admin/users');
     return { success: true, message: `Usuario ${newStatus ? 'deshabilitado' : 'habilitado'} correctamente.` };
 }
+
