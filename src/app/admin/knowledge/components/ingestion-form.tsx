@@ -33,8 +33,8 @@ export function IngestionForm() {
   });
 
   useEffect(() => {
-    // Evitamos mostrar el toast inicial
-    if (state.message) {
+    // Evitamos mostrar el toast inicial con el formulario vacío
+    if (form.formState.isSubmitSuccessful && state.message) {
       if (state.success) {
         toast({ title: 'Éxito', description: state.message });
         form.reset();
