@@ -60,6 +60,7 @@ export async function getChatHistory(): Promise<ConversationState[]> {
         .from('lex_chat_history')
         .select('question, answer')
         .eq('user_id', user.id)
+        .eq('visible', true)
         .order('created_at', { ascending: false });
 
     if (error) {
