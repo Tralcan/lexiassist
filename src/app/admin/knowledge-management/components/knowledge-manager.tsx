@@ -195,7 +195,7 @@ export default function KnowledgeManager({ availableDates }: { availableDates: s
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancelar</AlertDialogCancel>
                               <AlertDialogAction onClick={() => handleDeleteOne(doc.id)}>Eliminar</AlertDialogAction>
-                            </AlertDialogFooter>
+                            </Footer>
                           </AlertDialogContent>
                         </AlertDialog>
                       </div>
