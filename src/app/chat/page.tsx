@@ -4,10 +4,11 @@ import { useActionState, useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { askQuestion } from '../actions';
-import { AlertCircle, Bot, User } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { askQuestion, getChatHistory } from '../actions';
+import { AlertCircle, Bot, User, Loader2 } from 'lucide-react';
 import { useFormStatus } from 'react-dom';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 type Conversation = {
   question: string;
@@ -26,7 +27,14 @@ function SubmitButton() {
 
   return (
     <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? 'Pensando...' : 'Enviar Consulta'}
+      {pending ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Pensando...
+        </>
+      ) : (
+        'Enviar Consulta'
+      )}
     </Button>
   );
 }
@@ -34,11 +42,28 @@ function SubmitButton() {
 export default function ChatPage() {
   const [state, formAction, isPending] = useActionState(askQuestion, initialState);
   const [history, setHistory] = useState<Conversation[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const formRef = useRef<HTMLFormElement>(null);
-
+  
+  // Cargar el historial al montar el componente
   useEffect(() => {
-    if (!isPending && state.question) {
-      setHistory(prevHistory => [state, ...prevHistory]);
+    async function loadHistory() {
+      setIsLoadingHistory(true);
+      const pastConversations = await getChatHistory();
+      setHistory(pastConversations);
+      setIsLoadingHistory(false);
+    }
+    loadHistory();
+  }, []);
+
+
+  // Actualizar el historial cuando llega una nueva respuesta
+  useEffect(() => {
+    if (!isPending && state.question && state.answer) {
+       // Evitar duplicados si la página se recarga por revalidatePath
+      if (!history.some(h => h.question === state.question && h.answer === state.answer)) {
+         setHistory(prevHistory => [state, ...prevHistory]);
+      }
       formRef.current?.reset();
     }
   }, [state, isPending]);
@@ -51,7 +76,7 @@ export default function ChatPage() {
                 <Bot /> Asistente Legal Virtual
             </CardTitle>
             <CardDescription>
-                Realiza tu consulta sobre la legislación chilena. El asistente utilizará una base de conocimiento para responder.
+                Realiza tu consulta sobre la legislación chilena. Tu historial de conversación se guardará aquí.
             </CardDescription>
         </CardHeader>
         <CardContent>
@@ -66,11 +91,22 @@ export default function ChatPage() {
                     />
                 </div>
                 <SubmitButton />
+                 {state?.error && !state.answer && (
+                    <div className="text-destructive flex items-center gap-2 text-sm">
+                      <AlertCircle className="h-4 w-4" />
+                      <p>{state.error}</p>
+                    </div>
+                )}
             </form>
         </CardContent>
        </Card>
-
-      {isPending && history.length === 0 && (
+      
+      {isLoadingHistory ? (
+        <div className="space-y-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      ) : isPending && history.length === 0 ? (
          <Card className="opacity-50">
             <CardContent className="p-4">
               <div className="flex items-start gap-4">
@@ -84,42 +120,42 @@ export default function ChatPage() {
               </div>
             </CardContent>
           </Card>
+      ) : (
+         history.map((conv, index) => (
+          <Card key={index}>
+              <CardContent className="p-4 space-y-4">
+                  {/* User Question */}
+                  <div className="flex items-start gap-4">
+                      <div className="bg-secondary text-secondary-foreground rounded-full p-2 flex items-center justify-center">
+                          <User className="h-6 w-6" />
+                      </div>
+                      <div className="bg-muted rounded-lg p-4 w-full">
+                         <p className="font-bold">Tú</p>
+                         <p className="text-foreground/80">{conv.question}</p>
+                      </div>
+                  </div>
+
+                  {/* AI Answer */}
+                  <div className="flex items-start gap-4">
+                       <div className="bg-primary text-primary-foreground rounded-full p-2 flex items-center justify-center">
+                          <Bot className="h-6 w-6" />
+                      </div>
+                      <div className="bg-accent/50 rounded-lg p-4 w-full">
+                         <p className="font-bold">LexiAssist</p>
+                         {conv.error ? (
+                            <div className="text-destructive flex items-center gap-2">
+                              <AlertCircle className="h-4 w-4" />
+                              <p>{conv.error}</p>
+                            </div>
+                         ) : (
+                            <p className="text-foreground/80 whitespace-pre-wrap">{conv.answer}</p>
+                         )}
+                      </div>
+                  </div>
+              </CardContent>
+          </Card>
+         ))
       )}
-
-       {history.map((conv, index) => (
-        <Card key={index}>
-            <CardContent className="p-4 space-y-4">
-                {/* User Question */}
-                <div className="flex items-start gap-4">
-                    <div className="bg-secondary text-secondary-foreground rounded-full p-2 flex items-center justify-center">
-                        <User className="h-6 w-6" />
-                    </div>
-                    <div className="bg-muted rounded-lg p-4 w-full">
-                       <p className="font-bold">Tú</p>
-                       <p className="text-foreground/80">{conv.question}</p>
-                    </div>
-                </div>
-
-                {/* AI Answer */}
-                <div className="flex items-start gap-4">
-                     <div className="bg-primary text-primary-foreground rounded-full p-2 flex items-center justify-center">
-                        <Bot className="h-6 w-6" />
-                    </div>
-                    <div className="bg-accent/50 rounded-lg p-4 w-full">
-                       <p className="font-bold">LexiAssist</p>
-                       {conv.error ? (
-                          <div className="text-destructive flex items-center gap-2">
-                            <AlertCircle className="h-4 w-4" />
-                            <p>{conv.error}</p>
-                          </div>
-                       ) : (
-                          <p className="text-foreground/80">{conv.answer}</p>
-                       )}
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-       ))}
     </div>
   );
 }
