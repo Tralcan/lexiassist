@@ -47,7 +47,7 @@ export default function KnowledgeManagementPage() {
     startTransition(async () => {
         const result = await getAvailableDates();
         if (result.success && result.data) {
-            setAvailableDates(result.data);
+            setAvailableDates(result.data.filter(Boolean)); // Filtra valores nulos o vacíos
         } else {
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron cargar las fechas disponibles.' });
         }
@@ -124,7 +124,7 @@ export default function KnowledgeManagementPage() {
                   </SelectItem>
                 ))
               ) : (
-                <SelectItem value="" disabled>No hay fechas disponibles</SelectItem>
+                <div className="p-2 text-sm text-muted-foreground">No hay fechas disponibles</div>
               )}
             </SelectContent>
           </Select>
