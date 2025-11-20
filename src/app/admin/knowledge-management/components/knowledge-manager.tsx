@@ -27,6 +27,16 @@ type Document = {
   created_at: string;
 };
 
+// Función segura para formatear la fecha YYYY-MM-DD a DD/MM/YYYY
+const formatDateForDisplay = (dateString: string) => {
+  if (!dateString || typeof dateString !== 'string') return 'Fecha inválida';
+  const parts = dateString.split('-');
+  if (parts.length !== 3) return dateString; // Devuelve original si no tiene el formato esperado
+  const [year, month, day] = parts;
+  return `${day}/${month}/${year}`;
+};
+
+
 export default function KnowledgeManager({ availableDates }: { availableDates: string[] }) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -112,7 +122,7 @@ export default function KnowledgeManager({ availableDates }: { availableDates: s
               {availableDates.length > 0 ? (
                 availableDates.map(date => (
                   <SelectItem key={date} value={date}>
-                    {new Date(date).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}
+                    {formatDateForDisplay(date)}
                   </SelectItem>
                 ))
               ) : (
@@ -133,7 +143,7 @@ export default function KnowledgeManager({ availableDates }: { availableDates: s
                   <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
                   <AlertDialogDescription>
                     Esta acción no se puede deshacer. Esto eliminará permanentemente 
-                    todos los {documents.length} fragmentos ingresados el día {new Date(selectedDate).toLocaleDateString('es-CL', { timeZone: 'UTC' })}.
+                    todos los {documents.length} fragmentos ingresados el día {formatDateForDisplay(selectedDate)}.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
