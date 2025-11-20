@@ -30,7 +30,18 @@ export async function legalConsultationRAG(input: LegalConsultationRAGInput): Pr
 const prompt = ai.definePrompt({
   name: 'legalConsultationRAGPrompt',
   model: googleAI.model('gemini-2.5-flash'),
-  prompt: `You are a legal assistant specialized in Chilean law. You MUST answer in Spanish. Answer the user's question using ONLY the provided context. If the context is not sufficient, say that you don't have enough information to answer.\n\nContext:\n{{context}}\n\nQuestion: {{{question}}}`,
+  prompt: `Eres un asistente legal experto en legislación chilena. Tu tarea es responder la pregunta del usuario utilizando exclusivamente el contexto legal que se te proporciona.
+
+Instrucciones estrictas:
+1.  Tu respuesta DEBE estar en español.
+2.  Basa tu respuesta ÚNICAMENTE en el texto del 'Contexto'. No inventes información ni uses conocimiento externo.
+3.  Al final de tu respuesta, DEBES incluir una sección llamada "Fuente Legal" donde cites el artículo o fragmento específico del contexto que usaste para responder. Por ejemplo: "Fuente Legal: Artículo 5, Título II del Código Civil."
+4.  Si el contexto no contiene la información necesaria para responder la pregunta, debes responder exactamente: "No tengo suficiente información en mi base de conocimiento para responder a tu pregunta."
+
+Contexto:
+{{context}}
+
+Pregunta: {{{question}}}`,
 });
 
 const legalConsultationRAGFlow = ai.defineFlow(
