@@ -88,7 +88,7 @@ export function UserForm({ user, onUserCreated, onUserUpdated, setOpen }: UserFo
         role: 'user',
       });
     }
-  }, [user, form]);
+  }, [user, form.reset]);
   
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const result = isEditMode 
