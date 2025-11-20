@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -6,14 +5,37 @@ import { revalidatePath } from 'next/cache';
 
 // Tipos de retorno para consistencia
 type ActionResponse<T = null> = 
-  | { success: true; data: T; message?: string }
+  | { success: true; data?: T; message?: string }
   | { success: false; message: string };
 
-type Document = {
+export type Document = {
   id: string;
   content: string;
   created_at: string;
 };
+
+export async function getAvailableDates(): Promise<ActionResponse<string[]>> {
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.rpc('get_distinct_document_dates');
+
+    if (error) {
+      console.error('Error al llamar a RPC get_distinct_document_dates:', error);
+      throw new Error(error.message);
+    }
+    
+    if (Array.isArray(data)) {
+      const dates = data.map(item => item.distinct_date).filter(Boolean);
+      return { success: true, data: dates };
+    }
+
+    return { success: true, data: [] };
+  } catch (e: any) {
+    console.error("Excepción al obtener fechas disponibles:", e);
+    return { success: false, message: e.message || "Error desconocido al obtener fechas." };
+  }
+}
+
 
 export async function getDocumentsByDate(date: string): Promise<ActionResponse<Document[]>> {
   if (!date) {
@@ -24,8 +46,8 @@ export async function getDocumentsByDate(date: string): Promise<ActionResponse<D
     const { data, error } = await supabase
       .from('lex_documents')
       .select('id, content, created_at')
-      .filter('created_at', 'gte', `${date}T00:00:00Z`)
-      .filter('created_at', 'lt', `${date}T23:59:59Z`)
+      .gte('created_at', `${date}T00:00:00Z`)
+      .lt('created_at', `${date}T23:59:59Z`)
       .order('created_at', { ascending: false });
 
     if (error) throw error;

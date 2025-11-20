@@ -1,37 +1,211 @@
+'use client';
 
-import { createAdminClient } from '@/lib/supabase/admin';
-import KnowledgeManager from './components/knowledge-manager';
+import { useState, useTransition, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Info, Loader2, Copy, Trash2, ShieldAlert } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { 
+  getAvailableDates,
+  getDocumentsByDate,
+  deleteDocumentById,
+  deleteDocumentsByDate,
+  type Document
+} from '@/app/admin/knowledge-management/actions';
 
-/**
- * Obtiene las fechas únicas (en formato YYYY-MM-DD) de los documentos
- * directamente desde la base de datos de una manera segura.
- */
-async function getAvailableDates(): Promise<string[]> {
-  try {
-    const supabase = createAdminClient();
-    // Esta función RPC fue creada para devolver directamente strings en formato YYYY-MM-DD
-    const { data, error } = await supabase.rpc('get_distinct_document_dates');
+const formatDateForDisplay = (dateString: string): string => {
+  if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return 'Fecha inválida';
+  }
+  const [year, month, day] = dateString.split('-');
+  return `${day}/${month}/${year}`;
+};
 
-    if (error) {
-      console.error('Error al llamar a RPC get_distinct_document_dates:', error);
-      return [];
+export default function KnowledgeManagementPage() {
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    startTransition(async () => {
+        const result = await getAvailableDates();
+        if (result.success && result.data) {
+            setAvailableDates(result.data);
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron cargar las fechas disponibles.' });
+        }
+    });
+  }, [toast]);
+
+  const handleDateChange = (date: string) => {
+    setSelectedDate(date);
+    if (!date) {
+      setDocuments([]);
+      return;
     }
     
-    // El RPC devuelve un array de objetos: [{ distinct_date: 'YYYY-MM-DD' }, ...]
-    // Nos aseguramos de que es un array y extraemos solo el string de la fecha.
-    if (Array.isArray(data)) {
-      const dates = data.map(item => item.distinct_date).filter(Boolean); // filter(Boolean) elimina nulos/undefined
-      return dates;
-    }
+    startTransition(async () => {
+      const result = await getDocumentsByDate(date);
+      if (result.success && result.data) {
+        setDocuments(result.data);
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.message });
+      }
+    });
+  };
 
-    return [];
-  } catch (e) {
-    console.error("Excepción al obtener fechas disponibles:", e);
-    return [];
-  }
-}
+  const handleCopy = (content: string) => {
+    navigator.clipboard.writeText(content);
+    toast({ title: 'Copiado', description: 'Contenido copiado al portapapeles.' });
+  };
 
-export default async function KnowledgeManagementPage() {
-  const availableDates = await getAvailableDates();
-  return <KnowledgeManager availableDates={availableDates} />;
+  const handleDeleteOne = (docId: string) => {
+    startTransition(async () => {
+      const result = await deleteDocumentById(docId);
+      if (result.success) {
+        setDocuments(prev => prev.filter(doc => doc.id !== docId));
+        toast({ title: 'Éxito', description: result.message });
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.message });
+      }
+    });
+  };
+
+  const handleDeleteAll = () => {
+    if (!selectedDate) return;
+    startTransition(async () => {
+      const result = await deleteDocumentsByDate(selectedDate);
+      if (result.success) {
+        setDocuments([]);
+        toast({ title: 'Éxito', description: result.message });
+        const updatedDates = availableDates.filter(d => d !== selectedDate);
+        setAvailableDates(updatedDates);
+        setSelectedDate('');
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.message });
+      }
+    });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Gestión de Conocimiento</CardTitle>
+        <CardDescription>Revisa y elimina fragmentos de conocimiento por su fecha de ingreso.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <Select onValueChange={handleDateChange} value={selectedDate} disabled={isPending}>
+            <SelectTrigger className="w-full sm:w-[280px]">
+              <SelectValue placeholder="Selecciona una fecha..." />
+            </SelectTrigger>
+            <SelectContent>
+              {availableDates.length > 0 ? (
+                availableDates.map(date => (
+                  <SelectItem key={date} value={date}>
+                    {formatDateForDisplay(date)}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="" disabled>No hay fechas disponibles</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+          {selectedDate && documents.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" disabled={isPending} className="w-full sm:w-auto">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Eliminar Todo ({documents.length})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta acción eliminará permanentemente los {documents.length} fragmentos del día {formatDateForDisplay(selectedDate)}. No se puede deshacer.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteAll} className="bg-destructive hover:bg-destructive/90">Sí, eliminar todo</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
+        
+        <div className="min-h-[400px] relative">
+          {isPending && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          )}
+          {!selectedDate && !isPending ? (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>Selecciona una Fecha</AlertTitle>
+              <AlertDescription>Elige una fecha para ver los conocimientos ingresados ese día.</AlertDescription>
+            </Alert>
+          ) : !isPending && documents.length === 0 ? (
+            <Alert>
+              <ShieldAlert className="h-4 w-4" />
+              <AlertTitle>Sin Documentos</AlertTitle>
+              <AlertDescription>No se encontraron fragmentos para la fecha seleccionada.</AlertDescription>
+            </Alert>
+          ) : (
+            <ScrollArea className="h-[500px] rounded-md border">
+              <div className="p-4 space-y-4">
+                {documents.map(doc => (
+                  <Card key={doc.id}>
+                    <CardContent className="p-4">
+                      <p className="text-sm text-muted-foreground mb-4">{doc.content}</p>
+                      <div className="flex justify-end space-x-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleCopy(doc.content)} aria-label="Copiar contenido">
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" aria-label="Eliminar fragmento">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Confirmas la eliminación?</AlertDialogTitle>
+                              <AlertDialogDescription>Esta acción es irreversible y eliminará el fragmento.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteOne(doc.id)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
