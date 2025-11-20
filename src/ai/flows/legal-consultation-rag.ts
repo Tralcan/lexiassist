@@ -92,6 +92,22 @@ const legalConsultationRAGFlow = ai.defineFlow(
     }
 
     console.log('[RAG Flow] Context created from documents:', context.substring(0, 500) + '...');
+    
+    // Increment count for used documents asynchronously (fire and forget)
+    if (documents && documents.length > 0) {
+      console.log('[RAG Flow] Incrementing count for used documents...');
+      const incrementPromises = documents.map(doc =>
+        supabase.rpc('increment_lex_document_count', { doc_id: doc.id })
+      );
+      
+      Promise.allSettled(incrementPromises).then(results => {
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            console.error(`[RAG Flow] Failed to increment count for doc ${documents[index].id}:`, result.reason);
+          }
+        });
+      });
+    }
 
 
     // 3. Call the LLM with the context and question
