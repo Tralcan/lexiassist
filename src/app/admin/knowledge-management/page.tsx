@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -25,7 +26,7 @@ import {
   deleteDocumentById,
   deleteDocumentsByDate,
   type Document
-} from '@/app/admin/knowledge-management/actions';
+} from './actions';
 
 const formatDateForDisplay = (dateString: string): string => {
   if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {

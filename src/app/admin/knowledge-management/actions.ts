@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -51,7 +52,7 @@ export async function getDocumentsByDate(date: string): Promise<ActionResponse<D
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return { success: true, data };
+    return { success: true, data: data as Document[] };
   } catch (error: any) {
     return { success: false, message: `Error al obtener documentos: ${error.message}` };
   }
