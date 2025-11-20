@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
+import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,13 +62,33 @@ export function UserForm({ user, onUserCreated, onUserUpdated, setOpen }: UserFo
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      fullName: user?.profile?.full_name || '',
-      email: user?.email || '',
+      fullName: '',
+      email: '',
       password: '',
-      accessExpiresAt: user?.profile?.access_expires_at ? new Date(user.profile.access_expires_at) : undefined,
-      role: user?.profile?.role || 'user',
+      accessExpiresAt: undefined,
+      role: 'user',
     },
   });
+
+  useEffect(() => {
+    if (user) {
+      form.reset({
+        fullName: user.profile?.full_name || '',
+        email: user.email || '',
+        password: '',
+        accessExpiresAt: user.profile?.access_expires_at ? new Date(user.profile.access_expires_at) : undefined,
+        role: user.profile?.role || 'user',
+      });
+    } else {
+      form.reset({
+        fullName: '',
+        email: '',
+        password: '',
+        accessExpiresAt: undefined,
+        role: 'user',
+      });
+    }
+  }, [user, form]);
   
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const result = isEditMode 
