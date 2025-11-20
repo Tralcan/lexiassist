@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -29,9 +30,16 @@ type Document = {
 
 // Función segura para formatear la fecha YYYY-MM-DD a DD/MM/YYYY
 const formatDateForDisplay = (dateString: string) => {
-  if (!dateString || typeof dateString !== 'string') return 'Fecha inválida';
+  // --- DEBUGGING LOG (CLIENT) ---
+  console.log('[CLIENT-SIDE] Attempting to format date:', dateString, `(Type: ${typeof dateString})`);
+
+  if (!dateString || typeof dateString !== 'string' || !dateString.includes('-')) {
+    return 'Fecha inválida';
+  }
   const parts = dateString.split('-');
-  if (parts.length !== 3) return dateString; // Devuelve original si no tiene el formato esperado
+  if (parts.length !== 3) {
+    return 'Fecha inválida';
+  }
   const [year, month, day] = parts;
   return `${day}/${month}/${year}`;
 };
@@ -42,6 +50,12 @@ export default function KnowledgeManager({ availableDates }: { availableDates: s
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+
+  // --- DEBUGGING LOG (CLIENT) ---
+  useEffect(() => {
+    console.log('[CLIENT-SIDE] Received availableDates prop:', availableDates);
+  }, [availableDates]);
+
 
   const handleDateChange = (date: string) => {
     if (!date) {
@@ -143,7 +157,7 @@ export default function KnowledgeManager({ availableDates }: { availableDates: s
                   <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
                   <AlertDialogDescription>
                     Esta acción no se puede deshacer. Esto eliminará permanentemente 
-                    todos los {documents.length} fragmentos ingresados el día {formatDateForDisplay(selectedDate)}.
+                    todos los {documents.length} fragmentos ingresados el día {formatDateForDisplay(selectedDate!)}.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
