@@ -1,6 +1,6 @@
 # Firebase Studio
 
-This is a NextJS starter in Firebase Studio.
+This is a NextJS starter in Firebase Studio..
 
 Necesito crear una aplicación web para un Asistente Legal Virtual basado en un modelo RAG (Retrieval-Augmented Generation). La arquitectura de alto nivel debe incluir:
 
