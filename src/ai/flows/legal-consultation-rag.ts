@@ -101,24 +101,26 @@ const legalConsultationRAGFlow = ai.defineFlow(
     // 4. Increment count for used documents AFTER getting the response.
     if (documents && documents.length > 0) {
       console.log('[RAG Flow] Starting to increment count for used documents...');
+      
       const incrementPromises = documents.map(doc => {
           if (!doc.id) {
               console.warn('[RAG Flow] Document is missing an ID, cannot increment count:', doc);
               return Promise.resolve();
           }
-          return supabase.rpc('increment_lex_document_count', { doc_id: doc.id });
+          // Use .then() for void RPC functions as await can be problematic
+          return supabase.rpc('increment_lex_document_count', { doc_id: doc.id })
+            .then(({ error: rpcError }) => {
+              if (rpcError) {
+                console.error(`[RAG Flow] Failed to increment count for doc ${doc.id}:`, rpcError);
+              } else {
+                console.log(`[RAG Flow] Successfully sent increment request for doc ${doc.id}`);
+              }
+            });
       });
       
-      const results = await Promise.allSettled(incrementPromises);
-      
-      results.forEach((result, index) => {
-        if (result.status === 'rejected') {
-          console.error(`[RAG Flow] Failed to increment count for doc ${documents[index].id}:`, result.reason);
-        } else {
-          console.log(`[RAG Flow] Successfully incremented count for doc ${documents[index].id}`);
-        }
-      });
-      console.log('[RAG Flow] Finished incrementing counters.');
+      await Promise.all(incrementPromises);
+
+      console.log('[RAG Flow] Finished processing increment counters.');
     }
 
     return { answer: llmResponse.text };
