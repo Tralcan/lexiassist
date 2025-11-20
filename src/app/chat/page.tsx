@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { askQuestion, getChatHistory } from '../actions';
-import { AlertCircle, Bot, User, Loader2 } from 'lucide-react';
+import { AlertCircle, Bot, User, Loader2, Scale } from 'lucide-react';
 import { useFormStatus } from 'react-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -39,31 +39,63 @@ function SubmitButton() {
   );
 }
 
+const Answer = ({ text }: { text: string }) => {
+  if (!text) return null;
+
+  const sourceKeywords = ['Fuente Legal:', 'Fuente:', 'Fuentes Legales:'];
+  let mainAnswer = text;
+  let sourceText = '';
+  let splitKeyword = '';
+
+  for (const keyword of sourceKeywords) {
+    if (text.includes(keyword)) {
+      splitKeyword = keyword;
+      break;
+    }
+  }
+
+  if (splitKeyword) {
+    const parts = text.split(splitKeyword);
+    mainAnswer = parts[0].trim();
+    sourceText = parts.slice(1).join(splitKeyword).trim();
+  }
+
+  return (
+    <div className="text-foreground/80 whitespace-pre-wrap">
+      <p>{mainAnswer}</p>
+      {sourceText && (
+        <div className="mt-4 pt-3 border-t border-primary/20">
+            <h4 className="flex items-center text-sm font-semibold text-foreground/70 mb-2">
+                <Scale className="h-4 w-4 mr-2"/>
+                Fuente Legal
+            </h4>
+            <p className="text-sm text-foreground/60">{sourceText}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 export default function ChatPage() {
   const [state, formAction, isPending] = useActionState(askQuestion, initialState);
   const [history, setHistory] = useState<Conversation[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const formRef = useRef<HTMLFormElement>(null);
   
-  // Cargar el historial al montar el componente
   useEffect(() => {
     async function loadHistory() {
       setIsLoadingHistory(true);
       const pastConversations = await getChatHistory();
-      setHistory(pastConversations);
+      setHistory(pastConversations.filter(c => c.question && c.answer));
       setIsLoadingHistory(false);
     }
     loadHistory();
   }, []);
 
-
-  // Actualizar el historial cuando llega una nueva respuesta
   useEffect(() => {
     if (!isPending && state.question && state.answer) {
-       // Evitar duplicados si la página se recarga por revalidatePath
-      if (!history.some(h => h.question === state.question && h.answer === state.answer)) {
-         setHistory(prevHistory => [state, ...prevHistory]);
-      }
+      setHistory(prevHistory => [state, ...prevHistory]);
       formRef.current?.reset();
     }
   }, [state, isPending]);
@@ -148,7 +180,7 @@ export default function ChatPage() {
                               <p>{conv.error}</p>
                             </div>
                          ) : (
-                            <p className="text-foreground/80 whitespace-pre-wrap">{conv.answer}</p>
+                            <Answer text={conv.answer} />
                          )}
                       </div>
                   </div>
