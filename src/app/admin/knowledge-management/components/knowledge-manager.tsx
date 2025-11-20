@@ -5,7 +5,6 @@ import { useState, useTransition, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getDocumentsByDate, deleteDocumentById, deleteDocumentsByDate } from '../actions';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Info, Loader2, Copy, Trash2, ShieldAlert } from 'lucide-react';
@@ -21,6 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { getDocumentsByDate, deleteDocumentById, deleteDocumentsByDate } from '@/app/admin/knowledge-management/actions';
 
 type Document = {
   id: string;
