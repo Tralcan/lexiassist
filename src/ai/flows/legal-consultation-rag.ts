@@ -95,10 +95,10 @@ const legalConsultationRAGFlow = ai.defineFlow(
     
     // 3. Call the LLM with the context and question
     console.log('[RAG Flow] Calling LLM with context...');
-    const llmResponsePromise = prompt({question: input.question, context});
+    const llmResponse = await prompt({question: input.question, context});
+    console.log('[RAG Flow] Received answer from LLM.');
 
-    // 4. Increment count for used documents in parallel
-    let incrementPromise: Promise<any> = Promise.resolve();
+    // 4. Increment count for used documents AFTER getting the response.
     if (documents && documents.length > 0) {
       console.log('[RAG Flow] Starting to increment count for used documents...');
       const incrementPromises = documents.map(doc => {
@@ -109,21 +109,18 @@ const legalConsultationRAGFlow = ai.defineFlow(
           return supabase.rpc('increment_lex_document_count', { doc_id: doc.id });
       });
       
-      incrementPromise = Promise.allSettled(incrementPromises).then(results => {
-        results.forEach((result, index) => {
-          if (result.status === 'rejected') {
-            console.error(`[RAG Flow] Failed to increment count for doc ${documents[index].id}:`, result.reason);
-          } else {
-            console.log(`[RAG Flow] Successfully incremented count for doc ${documents[index].id}`);
-          }
-        });
+      const results = await Promise.allSettled(incrementPromises);
+      
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.error(`[RAG Flow] Failed to increment count for doc ${documents[index].id}:`, result.reason);
+        } else {
+          console.log(`[RAG Flow] Successfully incremented count for doc ${documents[index].id}`);
+        }
       });
+      console.log('[RAG Flow] Finished incrementing counters.');
     }
 
-    // Wait for both the LLM response and the counter increments to finish
-    const [llmResponse] = await Promise.all([llmResponsePromise, incrementPromise]);
-    
-    console.log('[RAG Flow] Received answer from LLM and finished incrementing counters.');
     return { answer: llmResponse.text };
   }
 );
