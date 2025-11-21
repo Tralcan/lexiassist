@@ -1,10 +1,10 @@
 'use client';
 
-import { useActionState, useEffect, useState, useRef } from 'react';
+import { useActionState, useEffect, useState, useRef, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { askQuestion, getChatHistory, clearChatHistory } from '../actions';
+import { askQuestion, getChatHistory, clearChatHistory, deleteSingleChatItem } from '../actions';
 import { AlertCircle, Bot, User, Loader2, Scale, Trash2 } from 'lucide-react';
 import { useFormStatus } from 'react-dom';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,12 +22,14 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 type Conversation = {
+  id?: string;
   question: string;
   answer: string;
   error?: string;
 };
 
 const initialState: Conversation = {
+  id: undefined,
   question: '',
   answer: '',
   error: '',
@@ -89,9 +91,10 @@ const Answer = ({ text }: { text: string }) => {
 
 
 export default function ChatPage() {
-  const [state, formAction, isPending] = useActionState(askQuestion, initialState);
+  const [state, formAction, isAskPending] = useActionState(askQuestion, initialState);
   const [history, setHistory] = useState<Conversation[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [isDeleting, startDeleteTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const { toast } = useToast();
   
@@ -106,11 +109,12 @@ export default function ChatPage() {
   }, []);
 
   useEffect(() => {
-    if (!isPending && state.question && state.answer) {
+    if (!isAskPending && state.question && state.answer) {
+       // El 'id' ahora viene del estado de la acción después de la inserción.
       setHistory(prevHistory => [state, ...prevHistory]);
       formRef.current?.reset();
     }
-  }, [state, isPending]);
+  }, [state, isAskPending]);
 
   const handleClearHistory = async () => {
     const result = await clearChatHistory();
@@ -120,6 +124,18 @@ export default function ChatPage() {
     } else {
         toast({ variant: "destructive", title: "Error", description: result.message });
     }
+  };
+
+  const handleDeleteSingle = (historyId: string) => {
+    startDeleteTransition(async () => {
+        const result = await deleteSingleChatItem(historyId);
+        if(result.success) {
+            setHistory(prev => prev.filter(item => item.id !== historyId));
+            toast({ title: "Eliminado", description: "La conversación ha sido eliminada."});
+        } else {
+            toast({ variant: "destructive", title: "Error", description: result.message });
+        }
+    });
   };
 
   return (
@@ -169,7 +185,7 @@ export default function ChatPage() {
                         placeholder="Escribe tu pregunta aquí..."
                         className="min-h-[100px] text-base"
                         required
-                        disabled={isPending}
+                        disabled={isAskPending}
                     />
                 </div>
                 <SubmitButton />
@@ -188,7 +204,7 @@ export default function ChatPage() {
           <Skeleton className="h-24 w-full" />
           <Skeleton className="h-24 w-full" />
         </div>
-      ) : isPending && history.length === 0 ? (
+      ) : isAskPending && history.length === 0 ? (
          <Card className="opacity-50">
             <CardContent className="p-4">
               <div className="flex items-start gap-4">
@@ -204,8 +220,31 @@ export default function ChatPage() {
           </Card>
       ) : (
          history.map((conv, index) => (
-          <Card key={index}>
-              <CardContent className="p-4 space-y-4">
+          <Card key={conv.id || `pending-${index}`}>
+              <CardContent className="p-4 space-y-4 relative group">
+                  {conv.id && (
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" disabled={isDeleting}>
+                                <Trash2 className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar esta conversación?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta acción ocultará esta entrada del historial de forma permanente.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteSingle(conv.id!)} className="bg-destructive hover:bg-destructive/90">
+                                    Eliminar
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                  )}
                   {/* User Question */}
                   <div className="flex items-start gap-4">
                       <div className="bg-secondary text-secondary-foreground rounded-full p-2 flex items-center justify-center">
